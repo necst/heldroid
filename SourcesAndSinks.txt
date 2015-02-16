@@ -1,0 +1,10 @@
+<android.os.Environment: java.io.File getExternalStorageDirectory()> -> _SOURCE_
+
+<javax.crypto.CipherOutputStream: void <init>(java.io.OutputStream,javax.crypto.Cipher)> -> _SINK_
+<javax.crypto.Cipher: byte[] doFinal()> -> _SINK_
+<javax.crypto.Cipher: byte[] doFinal(byte[])> -> _SINK_
+<javax.crypto.Cipher: byte[] doFinal(byte[],int,int)> -> _SINK_
+<javax.crypto.Cipher: int doFinal(byte[],int)> -> _SINK_
+<javax.crypto.Cipher: int doFinal(byte[],int,int,byte[])> -> _SINK_
+<javax.crypto.Cipher: int doFinal(byte[],int,int,byte[],int)> -> _SINK_
+<javax.crypto.Cipher: int doFinal(java.nio.ByteBuffer,java.nio.ByteBuffer)> -> _SINK_

@@ -1,0 +1,7 @@
+.idea/
+android-platforms/
+apktool-framework/
+apktool-tmp/
+out/
+examined.txt
+*.iml
