@@ -91,8 +91,10 @@ public class EncryptionFlowDetector {
         if (androidPlatformsDir == null)
             throw new NullPointerException("Android platforms dir not set!");
 
-        if (!this.hasRwPermission())
-            return false;
+        if (!this.hasRwPermission()) {
+            System.out.println("APK has no RW permission");
+        	return false;
+        }
 
 
         final Wrapper<InfoflowResults> res = new Wrapper<InfoflowResults>(null);
@@ -122,7 +124,16 @@ public class EncryptionFlowDetector {
 
         Logging.restoreAll();
 
-        return (res.value != null) && (res.value.getResults().size() > 0);
+        boolean result = (res.value != null) && (res.value.getResults().size() > 0);
+        System.out.println("EncryptionDetector's result = "+result);
+        if (!result) {
+        	if (res.value == null) {
+        		System.out.println("Res.value == null");
+        	} else {
+        		System.out.println("size == 0");
+        	}
+        }
+        return result;
     }
 
     private SetupApplication initAnalysis() {

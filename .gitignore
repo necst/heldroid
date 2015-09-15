@@ -5,3 +5,4 @@ apktool-tmp/
 out/
 examined.txt
 *.iml
+/bin/
