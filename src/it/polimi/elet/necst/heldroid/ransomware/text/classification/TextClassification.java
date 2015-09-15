@@ -1,17 +1,18 @@
 package it.polimi.elet.necst.heldroid.ransomware.text.classification;
 
 
+import java.io.File;
 import java.util.*;
 
 public class TextClassification {
     private List<SentenceClassification> sentenceClassifications;
-
+    
     public List<SentenceClassification> getSentenceClassifications() {
         return sentenceClassifications;
     }
 
     TextClassification(List<SentenceClassification> sentenceClassifications) {
-        this.sentenceClassifications = sentenceClassifications;
+        this.sentenceClassifications = sentenceClassifications;     
     }
 
     public double maxLikelihood(String category) {

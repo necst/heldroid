@@ -20,6 +20,7 @@ public class MultiResourceScanner extends ResourceScanner {
         TextClassification finalClassification = TextClassification.empty();
 
         for (ResourceScanner scanner : internalScanners) {
+        	System.out.println(scanner.toString());
             scanner.evaluate();
             finalClassification.append(scanner.textClassification);
         }

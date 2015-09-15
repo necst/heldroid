@@ -65,10 +65,20 @@ public class XmlValuesScanner extends ResourceScanner {
     }
 
     protected TextClassification findRansomwareText(File stringValuesFile, TextClassifier knownClassifier) {
-        try {
+    	try {
             Document document = db.parse(stringValuesFile);
             Element root = document.getDocumentElement();
-            return this.classifyElementText(root, knownClassifier);
+            TextClassification result = this.classifyElementText(root, knownClassifier);
+            
+            AcceptanceStrategy.Result score;
+            if (acceptanceStrategy == null) {
+            	System.out.println("No acceptance strategy set");
+            } else if ((score = acceptanceStrategy.accepts(result)).getScore() > 0) {
+            	System.out.println(String.format("File %s scored %f", stringValuesFile.getAbsolutePath(), score.getScore()));
+            } else {
+            	System.out.println(String.format("File %s scored %s", stringValuesFile.getAbsolutePath(), score.getComment()));
+            }
+            return result;
         } catch (Exception e) {
             return TextClassification.empty();
         }

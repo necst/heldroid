@@ -46,7 +46,16 @@ public class HtmlScanner extends ResourceScanner {
         try {
             Document document = Jsoup.parse(htmlFile, "UTF-8");
             Element body = document.body();
-            return this.classifyElementText(body, TextClassification.empty());
+            TextClassification result = this.classifyElementText(body, TextClassification.empty());
+            double score;
+            if (acceptanceStrategy == null) {
+            	System.out.println("No acceptance strategy set");
+            } else if ((score = acceptanceStrategy.accepts(result).getScore()) > 0) {
+            	System.out.println(String.format("File %s scored %f", htmlFile.getAbsolutePath(), score));
+            } else {
+            	System.out.println(String.format("File %s scored %f", htmlFile.getAbsolutePath(), score));
+            }
+            return result;
         } catch (Exception e) {
             return TextClassification.empty();
         }

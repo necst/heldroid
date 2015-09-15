@@ -1,6 +1,11 @@
 package it.polimi.elet.necst.heldroid.ransomware.text.classification;
 
-import java.util.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class GenericTextClassifier implements TextClassifier {
     private Segmenter segmenter;
