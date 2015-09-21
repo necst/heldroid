@@ -43,6 +43,7 @@ public class XmlValuesScanner extends ResourceScanner {
         if (valuesDir.exists()) {
             for (File stringValuesFile : FileSystem.listFiles(valuesDir, ".xml")) {
                 TextClassification valuesTextClassification = this.findRansomwareText(stringValuesFile, null);
+                finalClassification.getFileClassification().merge(valuesTextClassification.getFileClassification());
                 finalClassification.append(valuesTextClassification);
             }
         }
@@ -68,16 +69,11 @@ public class XmlValuesScanner extends ResourceScanner {
     	try {
             Document document = db.parse(stringValuesFile);
             Element root = document.getDocumentElement();
-            TextClassification result = this.classifyElementText(root, knownClassifier);
+            TextClassification result = this.classifyElementText(root, knownClassifier);   
             
-            AcceptanceStrategy.Result score;
-            if (acceptanceStrategy == null) {
-            	System.out.println("No acceptance strategy set");
-            } else if ((score = acceptanceStrategy.accepts(result)).getScore() > 0) {
-            	System.out.println(String.format("File %s scored %f", stringValuesFile.getAbsolutePath(), score.getScore()));
-            } else {
-            	System.out.println(String.format("File %s scored %s", stringValuesFile.getAbsolutePath(), score.getComment()));
-            }
+            extractLikelihood(stringValuesFile, result);
+            System.out.println("GetFIleClass = "+getFileClassification());
+            result.setFileClassification(getFileClassification());
             return result;
         } catch (Exception e) {
             return TextClassification.empty();

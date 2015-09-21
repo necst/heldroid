@@ -48,14 +48,9 @@ public class XmlLayoutScanner extends ResourceScanner {
             Element root = document.getDocumentElement();
 
             TextClassification result = this.classifyElementText(root, TextClassification.empty());
-            double score;
-            if (acceptanceStrategy == null) {
-            	System.out.println("No acceptance strategy set");
-            } else if ((score = acceptanceStrategy.accepts(result).getScore()) > 0) {
-            	System.out.println(String.format("File %s scored %f", xmlLayout.getAbsolutePath(), score));
-            } else {
-            	System.out.println(String.format("File %s scored %f", xmlLayout.getAbsolutePath(), score));
-            }
+            
+            extractLikelihood(xmlLayout, result);
+            result.setFileClassification(getFileClassification());
             return result;
         } catch (Exception e) {
             return TextClassification.empty();

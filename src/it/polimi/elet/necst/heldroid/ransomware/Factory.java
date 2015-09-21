@@ -80,6 +80,7 @@ public class Factory {
                                 textClassification.maxLikelihood("copyright"),
                                 textClassification.maxLikelihood("moneypak")));
 
+                result.setFileClassification(textClassification.getFileClassification());
                 return result;
             }
         };

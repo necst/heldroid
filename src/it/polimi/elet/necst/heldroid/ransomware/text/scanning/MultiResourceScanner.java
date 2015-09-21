@@ -1,5 +1,6 @@
 package it.polimi.elet.necst.heldroid.ransomware.text.scanning;
 
+import it.polimi.elet.necst.heldroid.ransomware.text.FileClassification;
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassification;
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifierCollection;
 
@@ -17,14 +18,22 @@ public class MultiResourceScanner extends ResourceScanner {
 
     @Override
     protected TextClassification findRansomwareText() {
-        TextClassification finalClassification = TextClassification.empty();
-
+        TextClassification finalClassification = TextClassification.empty();        
+        FileClassification finalFileClassification = new FileClassification();
+        
         for (ResourceScanner scanner : internalScanners) {
-        	System.out.println(scanner.toString());
-            scanner.evaluate();
+        	scanner.getFileClassification().clear();
+            AcceptanceStrategy.Result result = scanner.evaluate();
             finalClassification.append(scanner.textClassification);
+            
+            System.out.println(result.getFileClassification());
+            // merge results
+            finalFileClassification.merge(result.getFileClassification());
         }
-
+        
+        System.out.println("Final class "+finalFileClassification);
+        
+        finalClassification.setFileClassification(finalFileClassification);
         return finalClassification;
     }
 

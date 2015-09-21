@@ -125,14 +125,6 @@ public class EncryptionFlowDetector {
         Logging.restoreAll();
 
         boolean result = (res.value != null) && (res.value.getResults().size() > 0);
-        System.out.println("EncryptionDetector's result = "+result);
-        if (!result) {
-        	if (res.value == null) {
-        		System.out.println("Res.value == null");
-        	} else {
-        		System.out.println("size == 0");
-        	}
-        }
         return result;
     }
 

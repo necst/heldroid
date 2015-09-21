@@ -40,7 +40,7 @@ public class MainScanner {
             resultsWriter = new BufferedWriter(new FileWriter(result, true));
         else {
             resultsWriter = new BufferedWriter(new FileWriter(result));
-            resultsWriter.write("Sample, LockDetected, TextDetected, TextScore, EncryptionDetected, Comment, TimedOut");
+            resultsWriter.write("Sample; LockDetected; TextDetected; TextScore; EncryptionDetected; Comment; TimedOut; Classified files");
             resultsWriter.newLine();
         }
 
@@ -48,7 +48,7 @@ public class MainScanner {
             performancesWriter = new BufferedWriter(new FileWriter(Globals.PERFORMANCE_FILE, true));
         else {
             performancesWriter = new BufferedWriter(new FileWriter(Globals.PERFORMANCE_FILE));
-            performancesWriter.write("Sample, LockDetectionTime, TextDetectionTime, EncryptionDetectionTime, UnpackingTime, SmaliClassCount, SmaliSize, ApkSize");
+            performancesWriter.write("Sample; LockDetectionTime; TextDetectionTime; EncryptionDetectionTime; UnpackingTime; SmaliClassCount; SmaliSize; ApkSize");
             performancesWriter.newLine();
         }
 
@@ -146,10 +146,10 @@ public class MainScanner {
     }
 
     private static void checkFile(File file) {
-        if (examinedFiles.contains(file)) {
-            println("Skipped: " + file.getName());
-            return;
-        }
+//        if (examinedFiles.contains(file)) {
+//            println("Skipped: " + file.getName());
+//            return;
+//        }
 
         if (file.isFile() && file.getName().toLowerCase().endsWith(".apk")) {
             synchronized (availableFiles) {
@@ -305,6 +305,7 @@ public class MainScanner {
                     public void run() {
                         multiResourceScanner.setUnpackedApkDirectory(applicationData.getDecodedPackage().getDecodedDirectory());
                         AcceptanceStrategy.Result result = multiResourceScanner.evaluate();
+                        
                         if (textDetected != null)
                             textDetected.value = result;
                     }
@@ -364,16 +365,17 @@ public class MainScanner {
         } catch (InterruptedException e) { }
 
         try {
-            resultsWriter.write(String.format("%s, %b, %b, %f, %b, \"%s\", %b\n",
+            resultsWriter.write(String.format("%s; %b; %b; %f; %b; \"%s\"; %b; %s\n",
                     apkName,
                     lockDetected.value,
                     textDetected.value.isAccepted(),
                     textDetected.value.getScore(),
                     encryptionDetected.value,
                     textDetected.value.getComment(),
-                    timedOut));
+                    timedOut,
+                    textDetected.value.getFileClassification().toString()));
 
-            performancesWriter.write(String.format("%s, %f, %f, %f, %f, %d, %d, %d\n",
+            performancesWriter.write(String.format("%s; %f; %f; %f; %f; %d; %d; %d\n",
                     apkName,
                     lockDetectionTime.value,
                     textDetectionTime.value,

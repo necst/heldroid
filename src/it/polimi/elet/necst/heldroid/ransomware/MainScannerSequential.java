@@ -36,7 +36,7 @@ public class MainScannerSequential {
             resultsWriter = new BufferedWriter(new FileWriter(result, true));
         else {
             resultsWriter = new BufferedWriter(new FileWriter(result));
-            resultsWriter.write("Sample, LockDetected, TextDetected, TextScore, EncryptionDetected, Comment, TimedOut");
+            resultsWriter.write("Sample; LockDetected; TextDetected; TextScore; EncryptionDetected; Comment; TimedOut; FileClassification");
             resultsWriter.newLine();
         }
 
@@ -245,14 +245,15 @@ public class MainScannerSequential {
         } catch (InterruptedException e) { }
 
         try {
-            resultsWriter.write(String.format("%s, %b, %b, %f, %b, \"%s\", %b\n",
+            resultsWriter.write(String.format("%s; %b; %b; %f; %b; \"%s\"; %b; %s\n",
                     apkName,
                     lockDetected.value,
                     textDetected.value.isAccepted(),
                     textDetected.value.getScore(),
                     encryptionDetected.value,
                     textDetected.value.getComment(),
-                    timedOut));
+                    timedOut,
+                    textDetected.value.getFileClassification()));
 
             performancesWriter.write(String.format("%s, %f, %f, %f, %f, %d, %d, %d\n",
                     apkName,
