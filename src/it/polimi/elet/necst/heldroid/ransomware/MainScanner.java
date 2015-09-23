@@ -86,8 +86,12 @@ public class MainScanner {
         unpackingThread.setName("UnpackingThread");
 
         analysisThread = new Thread(new Runnable() {
+        	
+        	private int analyzed = 0;
+        	
             @Override
             public void run() {
+            	System.out.println(String.format("Analyzed %d files out of %d", analyzed, availableFiles.size()));
                 analysisRoutine();
             }
         });
@@ -146,10 +150,10 @@ public class MainScanner {
     }
 
     private static void checkFile(File file) {
-//        if (examinedFiles.contains(file)) {
-//            println("Skipped: " + file.getName());
-//            return;
-//        }
+        if (examinedFiles.contains(file)) {
+            println("Skipped: " + file.getName());
+            return;
+        }
 
         if (file.isFile() && file.getName().toLowerCase().endsWith(".apk")) {
             synchronized (availableFiles) {

@@ -3,6 +3,7 @@ package it.polimi.elet.necst.heldroid.ransomware.text.scanning;
 import com.cybozu.labs.langdetect.Detector;
 import com.cybozu.labs.langdetect.DetectorFactory;
 import com.cybozu.labs.langdetect.LangDetectException;
+import com.sun.org.apache.xerces.internal.impl.xpath.regex.Match;
 
 import it.polimi.elet.necst.heldroid.ransomware.text.FileClassification;
 import it.polimi.elet.necst.heldroid.ransomware.text.SupportedLanguage;
@@ -18,6 +19,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,7 +33,7 @@ public abstract class ResourceScanner {
 	protected File unpackedApkDirectory;
 	protected AcceptanceStrategy acceptanceStrategy;
 	protected TextClassification textClassification;
-	
+
 	protected FileClassification fileClassification = new FileClassification();
 
 	private Set<String> encounteredLanguages;
@@ -68,7 +70,7 @@ public abstract class ResourceScanner {
 	public void setAcceptanceStrategy(AcceptanceStrategy acceptanceStrategy) {
 		this.acceptanceStrategy = acceptanceStrategy;
 	}
-	
+
 	public FileClassification getFileClassification() {
 		return fileClassification;
 	}
@@ -84,7 +86,7 @@ public abstract class ResourceScanner {
 			throw new IllegalArgumentException(
 					"Classification shouldn't be null");
 		}
-		
+
 		for (String category : FileClassification.CATEGORIES) {
 			double score = classification.maxLikelihood(category);
 			if (score > 0d) {
@@ -99,7 +101,12 @@ public abstract class ResourceScanner {
 			throw new IllegalArgumentException("File shouldn't be null");
 		}
 
-		this.extractLikelihood(file.getAbsolutePath(), classification);
+		// use relative path, if possible
+		String fullPath = file.getAbsolutePath();
+
+		Matcher matcher = Pattern.compile(".*\\.apk\\/(.+)").matcher(fullPath);
+
+		this.extractLikelihood(matcher.matches() ? matcher.group(1) : fullPath, classification);
 	}
 
 	public ResourceScanner(TextClassifierCollection textClassifierCollection) {

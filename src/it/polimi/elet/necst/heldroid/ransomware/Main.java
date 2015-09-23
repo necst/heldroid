@@ -27,7 +27,6 @@ public class Main {
 
         String op = args[0];
         Options options = new Options(args);
-
         DetectorFactory.loadProfile(Globals.LANGUAGE_PROFILES_DIRECTORY);
 
         if (op.equals("scan")) {

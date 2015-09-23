@@ -49,7 +49,7 @@ public class HtmlScanner extends ResourceScanner {
             TextClassification result = this.classifyElementText(body, TextClassification.empty());
             
             extractLikelihood(htmlFile, result);
-            
+            result.setFileClassification(getFileClassification());
             return result;
         } catch (Exception e) {
             return TextClassification.empty();

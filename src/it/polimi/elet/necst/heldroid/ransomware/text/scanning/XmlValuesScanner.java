@@ -72,7 +72,6 @@ public class XmlValuesScanner extends ResourceScanner {
             TextClassification result = this.classifyElementText(root, knownClassifier);   
             
             extractLikelihood(stringValuesFile, result);
-            System.out.println("GetFIleClass = "+getFileClassification());
             result.setFileClassification(getFileClassification());
             return result;
         } catch (Exception e) {

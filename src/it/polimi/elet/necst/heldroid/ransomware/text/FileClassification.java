@@ -67,10 +67,17 @@ public class FileClassification {
 			
 			List<String> otherList = other.getClassifiedFiles().get(category);
 			
-			if (otherList != null) {
-				thisList.addAll(otherList);
+			if (otherList == null) {
+				return;
 			}
-			assert thisList.size() == previousSize + (otherList != null ? otherList.size() : 0);
+			
+			// Avoid adding duplicates
+			for (String s : otherList) {
+				if (!thisList.contains(s)) {
+					thisList.add(s);
+				}
+			}
+			
 		}
 		
 	}
@@ -83,15 +90,12 @@ public class FileClassification {
 			list = new LinkedList<>();
 			classifiedFiles.put(category, list);
 		}
-		
-		System.out.println("ADDING FILE "+fileName);
 
 		// add file only if it's not already included in the list
 		if (!list.contains(fileName)) {
 			list.add(fileName);
 		}
 		
-		System.out.println("List size = "+list.size());
 	}
 	
 	public Map<String, List<String>> getClassifiedFiles() {

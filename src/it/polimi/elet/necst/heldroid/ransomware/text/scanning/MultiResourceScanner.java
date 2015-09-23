@@ -26,12 +26,10 @@ public class MultiResourceScanner extends ResourceScanner {
             AcceptanceStrategy.Result result = scanner.evaluate();
             finalClassification.append(scanner.textClassification);
             
-            System.out.println(result.getFileClassification());
             // merge results
             finalFileClassification.merge(result.getFileClassification());
         }
         
-        System.out.println("Final class "+finalFileClassification);
         
         finalClassification.setFileClassification(finalFileClassification);
         return finalClassification;
