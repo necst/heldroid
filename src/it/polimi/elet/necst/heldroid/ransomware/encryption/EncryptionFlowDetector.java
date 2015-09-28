@@ -74,7 +74,13 @@ public class EncryptionFlowDetector {
                 else if (name.equals(READ_EXTERNAL_STORAGE))
                     canRead = true;
 
-                if (canRead && canWrite)
+                /*
+                 * Any app that declares the WRITE_EXTERNAL_STORAGE permission
+                 * is implicitly granted READ_EXTERNAL_STORAGE permission.
+                 * So there's no need to check READ_EXTERNAL_STORAGE permission.
+                 */
+//                if (canRead && canWrite)
+                if (canWrite)
                     return true;
             }
 
