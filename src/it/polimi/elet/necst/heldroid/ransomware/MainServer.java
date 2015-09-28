@@ -178,7 +178,7 @@ public class MainServer implements Runnable {
         private static final String MULTIPLART_MIME_TYPE = "multipart/form-data";
         private static final String OCTET_STREAM_MIME_TYPE = "application/octet-stream";
         private static final String CONTENT_TYPE_HEADER = "Content-Type";
-        private static final String BOUNDARY_FIELD = "boundary";˙
+        private static final String BOUNDARY_FIELD = "boundary";
         private static final String BOUNDARY_PREFIX = "--";
         private static final String BOUNDARY_SUFFIX = "--";
 

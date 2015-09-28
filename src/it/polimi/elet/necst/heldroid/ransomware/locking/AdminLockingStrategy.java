@@ -1,4 +1,4 @@
-xpackage it.polimi.elet.necst.heldroid.ransomware.locking;
+package it.polimi.elet.necst.heldroid.ransomware.locking;
 
 import it.polimi.elet.necst.heldroid.smali.SmaliConstantFinder;
 import it.polimi.elet.necst.heldroid.smali.names.SmaliMemberName;
