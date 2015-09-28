@@ -1,5 +1,3 @@
-@relation 'RapidMinerData-weka.filters.unsupervised.attribute.Remove-R1-weka.filters.unsupervised.attribute.ReplaceMissingValues-weka.filters.unsupervised.attribute.Discretize-F-B4-M-1.0-R116,123-126,130-136-weka.filters.unsupervised.attribute.Remove-V-R119,103,48,32,46,44,47,49,45,30,215,29,112,111,52,135,27,116,97,101,136,118,117,96,158,14,99,100,37,33,126,163,125,167,120,16,31,127,87,24,181,35,124,123,114,132,130,65,113,134,34,21,71,189,57,41,43,175,28,80,91,88,131,187,171,25,73,102,166,93,62,133,56,174,69,38,179,178,70,79,5,183,162,182,66,63,11,61,161,15,51,7,4,204,22,67,90,94,108,186,58,107,104,6,36,184,176,105,68,205,199,115,180,85,10,42,83,23,12,78,last'
-
 @attribute 'Contains URL known to be suspicious' {false,true}
 @attribute 'Airpush Included' {false,true}
 @attribute 'Api Call: Landroid/app/Service;->onLowMemory' {false,true}
@@ -120,6 +118,3 @@
 @attribute 'Dangerous Permission: WRITE_EXTERNAL_STORAGE' {false,true}
 @attribute 'Dangerous Permission: INTERNAL_SYSTEM_WINDOW' {false,true}
 @attribute 'Can Steal Data: DIAGNOSTIC' {false,true}
-@attribute 'Detection Ratio' {Benign,Malicious}
-
-@data

@@ -6,7 +6,7 @@ import it.polimi.elet.necst.heldroid.smali.SmaliInspector;
 import it.polimi.elet.necst.heldroid.smali.SmaliLoader;
 import it.polimi.elet.necst.heldroid.apk.DecodedPackage;
 
-public abstract class SmaliLockingStrategy extends LockingStrategy {
+public abstract class  SmaliLockingStrategy extends LockingStrategy {
     protected SmaliLoader loader;
     protected SmaliInspector inspector;
     protected SmaliConstantFinder constantFinder;

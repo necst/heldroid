@@ -166,7 +166,7 @@ public class MainServer implements Runnable {
         protected void respond(HttpExchange exchange, int statusCode, String message) throws IOException {
             byte[] bytes = message.getBytes();
 
-            exchange.sendResponseHeaders(501, bytes.length);
+            exchange.sendResponseHeaders(statusCode, bytes.length);
 
             OutputStream stream = exchange.getResponseBody();
             stream.write(bytes);
@@ -178,7 +178,7 @@ public class MainServer implements Runnable {
         private static final String MULTIPLART_MIME_TYPE = "multipart/form-data";
         private static final String OCTET_STREAM_MIME_TYPE = "application/octet-stream";
         private static final String CONTENT_TYPE_HEADER = "Content-Type";
-        private static final String BOUNDARY_FIELD = "boundary";
+        private static final String BOUNDARY_FIELD = "boundary";˙
         private static final String BOUNDARY_PREFIX = "--";
         private static final String BOUNDARY_SUFFIX = "--";
 
