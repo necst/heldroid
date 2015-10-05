@@ -18,7 +18,7 @@ def main():
 	parser = argparse.ArgumentParser(description="""This program lets you download VT reports and associate them with heldoid .csv output file.
 		In particular it searches all hashes from the .csv file, performs a request to VT and outputs a .txt file.
 		IMPORTANT: It is assumed that the APK file name corresponds to its SHA or MD5 hash, i.e. <SHA|MD5>.apk""")
-	parser.add_argument('folders', nargs='*', help="A list of .csv files or a list of folders in which the CSV file search should be performed. See also option \"-r\".")
+	parser.add_argument('folders', nargs='*', help="A list of .csv files to examine or a list of folders in which the CSV file(s) should be searched. See also option \"-r\".")
 	parser.add_argument("-r", "--recursive", action='store_true', help="Perform a recursive search in <folders>")
 	parser.add_argument("-o", "--output", default="output.txt", help="Name of the output file (the \".txt\" extension will be added, if not present)", metavar="<file_name>")
 

@@ -1,6 +1,8 @@
 # heldroid_associator.py
 Lo script `heldroid_associator.py` permette di associare i report provenienti da VirusTotal con i dati provenienti da HelDroid, creando un oggetto JSON e scrivendolo in un file di testo. Attualmente è richiesto che il file .csv ottenuto da HelDroid contenga nella prima colonna il percorso del file APK esaminato, e che quest'ultimo abbia come nome il proprio hash, seguito dall'estensione ".apk".Ad esempio: /home/nicola/Desktop/apk/72e9f2ca12a1794ad716d0f28c6cfbf1b0bbfb2725d55fcef96ce3fd0931d163.apk
 
+A causa di limitazioni nelle richieste alle API pubbliche, non è possibile fare più di 4 richieste al minuto.
+
  - Un esempio di uso è:
 
         $ python heldroid_associator.py intelligencefiles/ransomware -o result.txt
