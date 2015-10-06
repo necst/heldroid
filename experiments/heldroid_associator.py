@@ -63,8 +63,7 @@ def main():
 
 	logging.info("Search done. Found %d CSV file(s):\n\t--> %s", len(csvFiles), '\n\t-->'.join(csvFiles))
 	
-	if len(csvFiles) > 1:
-		count = 1
+	count = 1 if len(csvFiles) > 1 else None
 
 	for csvFile in csvFiles:
 		logging.info("Examining: %s", csvFile)
@@ -174,11 +173,6 @@ def extractHash(fileName):
 	if result:
 		return result.group('hash')
 	return None
-
-def downloadReport(_hash):
-	# call vt_details_downloader script
-	rawJson = vt_details_downloader.performRequest(_hash, decoded=False, verbose=False)
-	return rawJson
 
 def searchInFolder(folder, fileExtension, recursive=False):
 	"""Returns all files ending with \"fileExtension\" in \"folder\". Note that this method changes the current working directory, so you need to
