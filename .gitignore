@@ -6,3 +6,4 @@ out/
 examined.txt
 *.iml
 /bin/
+.DS_Store
