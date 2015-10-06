@@ -10,7 +10,7 @@ import urllib2
 import json
 
 MIN_LOGGING_LEVEL = logging.INFO
-API_KEY = '37b64bb3f1cfdd0fa1bc66aec949431e1b8b2cc02c9bbe294d23eb6e692dee13'
+API_KEY = sys.environ['VT_API_KEY']
 URL = "https://www.virustotal.com/vtapi/v2/file/report"
 
 def main():
