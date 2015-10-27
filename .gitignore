@@ -7,3 +7,6 @@ examined.txt
 *.iml
 /bin/
 .DS_Store
+
+# Ignore APK files in experiments folder
+**/experiments/**/*.apk
