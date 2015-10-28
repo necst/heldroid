@@ -34,7 +34,7 @@ public class EncryptionFlowDetector {
     private static final String SOURCE_SINKS_FILE_NAME = "SourcesAndSinks.txt";
     private static final String TAINT_WRAPPER_FILE_NAME = "EasyTaintWrapperSource.txt";
 
-    private static final int FLOW_TIMEOUT = 20; // seconds
+    private static final int FLOW_TIMEOUT = 10*60; // seconds
 
     private DocumentBuilderFactory dbFactory;
     private DocumentBuilder db;
@@ -90,20 +90,23 @@ public class EncryptionFlowDetector {
         }
     }
 
-    public boolean detect() {
+    public Wrapper<EncryptionResult> detect() {
         if (target == null)
             throw new NullPointerException("Target not set!");
 
         if (androidPlatformsDir == null)
             throw new NullPointerException("Android platforms dir not set!");
 
+        final Wrapper<EncryptionResult> result = new Wrapper<>(new EncryptionResult());
+        result.value.setWritable(this.hasRwPermission());
+        
         if (!this.hasRwPermission()) {
             System.out.println("APK has no RW permission");
-        	return false;
+//        	return false;
+            return result;
         }
 
-
-        final Wrapper<InfoflowResults> res = new Wrapper<InfoflowResults>(null);
+//        final Wrapper<InfoflowResults> res = new Wrapper<InfoflowResults>(null);
 
         Logging.suppressAll();
 
@@ -116,8 +119,11 @@ public class EncryptionFlowDetector {
 
                 try {
                     app = initAnalysis();
-                    if (res != null)
-                        res.value = app.runInfoflow();
+//                    if (res != null)
+//                        res.value = app.runInfoflow();
+                    if (result != null && result.value != null) {
+                    	result.value.setInfoFlowResults(app.runInfoflow());
+                    }
                 } catch (Throwable e) { }
             }
         });
@@ -130,14 +136,14 @@ public class EncryptionFlowDetector {
 
         Logging.restoreAll();
 
-        boolean result = (res.value != null) && (res.value.getResults().size() > 0);
+//        boolean result = (res.value != null) && (res.value.getResults().size() > 0);
         return result;
     }
 
     private SetupApplication initAnalysis() {
         SetupApplication app = new SetupApplication(androidPlatformsDir.getAbsolutePath(), target.getOriginalApk().getAbsolutePath() );
         app.setStopAfterFirstFlow(true);
-        app.setEnableImplicitFlows(false);
+        app.setEnableImplicitFlows(true);
         app.setEnableStaticFieldTracking(true);
         app.setEnableCallbacks(true);
         app.setEnableExceptionTracking(true);

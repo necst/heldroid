@@ -23,7 +23,7 @@ public class FileClassification {
 		
 		// initialize empty categories
 		for (String cat : CATEGORIES) {
-			classifiedFiles.put(cat, new LinkedList<>());
+			classifiedFiles.put(cat, new LinkedList<String>());
 		}
 	}
 	
@@ -45,7 +45,7 @@ public class FileClassification {
 			if (classifiedFiles.get(cat) != null)
 				classifiedFiles.get(cat).clear();
 			else
-				classifiedFiles.put(cat, new LinkedList<>());
+				classifiedFiles.put(cat, new LinkedList<String>());
 		}
 	}
 	

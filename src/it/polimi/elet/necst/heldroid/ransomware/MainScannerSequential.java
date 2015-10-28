@@ -4,7 +4,9 @@ import it.polimi.elet.necst.heldroid.pipeline.ApplicationData;
 import it.polimi.elet.necst.heldroid.utils.Options;
 import it.polimi.elet.necst.heldroid.utils.PersistentFileList;
 import it.polimi.elet.necst.heldroid.utils.Wrapper;
+import soot.jimple.infoflow.results.InfoflowResults;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
+import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionResult;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
@@ -171,7 +173,7 @@ public class MainScannerSequential {
         final Wrapper<Boolean> lockDetected = new Wrapper<Boolean>(false);
         final Wrapper<AcceptanceStrategy.Result> textDetected = new Wrapper<AcceptanceStrategy.Result>(AcceptanceStrategy.fail());
         final Wrapper<Boolean> encryptionDetected = new Wrapper<Boolean>(false);
-
+        final Wrapper<Boolean> hasRWPermission = new Wrapper<>(false);
         final Wrapper<Double> lockDetectionTime = new Wrapper<Double>((double)ANALYSIS_TIMEOUT);
         final Wrapper<Double> textDetectionTime = new Wrapper<Double>((double)ANALYSIS_TIMEOUT);
         final Wrapper<Double> encryptionDetectionTime = new Wrapper<Double>((double)ANALYSIS_TIMEOUT);
@@ -223,9 +225,14 @@ public class MainScannerSequential {
                         @Override
                         public void run() {
                             encryptionFlowDetector.setTarget(applicationData.getDecodedPackage());
-                            Boolean result = encryptionDetected.value = encryptionFlowDetector.detect();
+                            
+                            Wrapper<EncryptionResult> encryptionResult = encryptionFlowDetector.detect();
+                            InfoflowResults infoFlow = encryptionResult.value.getInfoFlowResults();
+                            Boolean result = (infoFlow != null && infoFlow.getResults().size() > 0);
                             if (encryptionDetected != null)
                                 encryptionDetected.value = result;
+                            if (hasRWPermission != null)
+                            	hasRWPermission.value = encryptionResult.value.isWritable();
                         }
                     });
 
@@ -245,11 +252,12 @@ public class MainScannerSequential {
         } catch (InterruptedException e) { }
 
         try {
-            resultsWriter.write(String.format("%s; %b; %b; %f; %b; \"%s\"; %b; %s\n",
+            resultsWriter.write(String.format("%s; %b; %b; %f; %b; %b; \"%s\"; %b; %s\n",
                     apkName,
                     lockDetected.value,
                     textDetected.value.isAccepted(),
                     textDetected.value.getScore(),
+                    hasRWPermission.value,
                     encryptionDetected.value,
                     textDetected.value.getComment(),
                     timedOut,

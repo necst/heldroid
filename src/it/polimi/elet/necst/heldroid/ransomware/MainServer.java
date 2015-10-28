@@ -4,6 +4,8 @@ import com.sun.net.httpserver.*;
 import it.polimi.elet.necst.heldroid.pipeline.ApplicationData;
 import it.polimi.elet.necst.heldroid.utils.FileSystem;
 import it.polimi.elet.necst.heldroid.utils.MixedInputStream;
+import soot.jimple.infoflow.Infoflow;
+import soot.jimple.infoflow.results.InfoflowResults;
 import it.polimi.elet.necst.heldroid.ransomware.emulation.TrafficScanner;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
@@ -118,7 +120,9 @@ public class MainServer implements Runnable {
             encryptionFlowDetector.setTarget(applicationData.getDecodedPackage());
 
             lockDetected = multiLockingStrategy.detect();
-            encryptionDetected = encryptionFlowDetector.detect();
+//            encryptionDetected = encryptionFlowDetector.detect();
+            InfoflowResults infoFlowResults = encryptionFlowDetector.detect().value.getInfoFlowResults();
+            encryptionDetected = (infoFlowResults != null && infoFlowResults.getResults().size() > 0);
             textResult = multiResourceScanner.evaluate();
         }
 
