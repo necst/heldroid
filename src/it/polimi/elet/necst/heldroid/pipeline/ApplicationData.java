@@ -60,8 +60,9 @@ public class ApplicationData {
 
         if (isApkFile(file))
             result = extract(file);
-        else if (isUnpackedApkDirectory(file))
+        else if (isUnpackedApkDirectory(file)) {
             result = read(file);
+        }
 
         if (result != null)
         {
@@ -103,6 +104,11 @@ public class ApplicationData {
             @Override
             public File getClassesDex() {
                 return new File(mainDirectory, "classes.dex");
+            }
+            
+            @Override
+            public File getResourcesDirectory() {
+            	throw new UnsupportedOperationException("This method is not implemented yet");
             }
 
             @Override

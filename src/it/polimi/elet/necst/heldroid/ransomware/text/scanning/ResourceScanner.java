@@ -101,9 +101,9 @@ public abstract class ResourceScanner {
 			throw new IllegalArgumentException("File shouldn't be null");
 		}
 
-		// use relative path, if possible
 		String fullPath = file.getAbsolutePath();
 
+		// use relative path, if possible
 		Matcher matcher = Pattern.compile(".*\\.apk\\/(.+)").matcher(fullPath);
 
 		this.extractLikelihood(matcher.matches() ? matcher.group(1) : fullPath, classification);
