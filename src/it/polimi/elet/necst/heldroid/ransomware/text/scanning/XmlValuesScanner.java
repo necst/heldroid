@@ -43,7 +43,6 @@ public class XmlValuesScanner extends ResourceScanner {
         if (valuesDir.exists()) {
             for (File stringValuesFile : FileSystem.listFiles(valuesDir, ".xml")) {
                 TextClassification valuesTextClassification = this.findRansomwareText(stringValuesFile, null);
-                finalClassification.getFileClassification().merge(valuesTextClassification.getFileClassification());
                 finalClassification.append(valuesTextClassification);
             }
         }

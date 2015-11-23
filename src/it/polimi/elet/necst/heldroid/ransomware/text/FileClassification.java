@@ -63,8 +63,6 @@ public class FileClassification {
 				classifiedFiles.put(category, thisList);
 			}
 			
-			int previousSize = thisList.size();
-			
 			List<String> otherList = other.getClassifiedFiles().get(category);
 			
 			if (otherList == null) {

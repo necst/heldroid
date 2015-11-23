@@ -89,6 +89,9 @@ public class TextClassification {
 
 	public void append(TextClassification other) {
 		sentenceClassifications.addAll(other.sentenceClassifications);
+		
+		// Merge also FileClassification data
+		this.fileClassification.merge(other.getFileClassification());
 	}
 
 	public static TextClassification empty() {
