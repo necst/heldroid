@@ -118,10 +118,13 @@ public class DeviceAdminDetector {
 				Element root = document.getDocumentElement();
 				
 				if (root.getTagName().equals(DEVICE_ADMIN_TAG)) {
+					// This app makes use of <device-admin>
+					result = new DeviceAdminResult();
+					result.setDeviceAdminUsed(true);
+					
 					// This tag's child are the policies 
 					Element usesPolicies = Xml.getChildElement(root, USES_POLICIES);
 					if (usesPolicies != null) {
-						result = new DeviceAdminResult();
 						
 						// Will contain a list of policies
 						List<Element> policies = Xml.getChildElements(usesPolicies);

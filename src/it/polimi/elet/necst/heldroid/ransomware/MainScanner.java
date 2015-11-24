@@ -5,6 +5,9 @@ import it.polimi.elet.necst.heldroid.utils.Options;
 import it.polimi.elet.necst.heldroid.utils.PersistentFileList;
 import it.polimi.elet.necst.heldroid.utils.Wrapper;
 import soot.jimple.infoflow.results.InfoflowResults;
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminDetector;
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult;
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult.Policy;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionResult;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
@@ -33,10 +36,12 @@ public class MainScanner {
 		noLock = options.contains("-nl");
 		noEncryption = options.contains("-ne");
 		noTextDetection = options.contains("-nt");
+		noDeviceAdminDetection = options.contains("-na");
 
 		multiLockingStrategy = Factory.createLockingStrategy();
 		multiResourceScanner = Factory.createResourceScanner();
 		encryptionFlowDetector = Factory.createEncryptionFlowDetector();
+		deviceAdminDetector = Factory.createDeviceAdminDetector();
 
 		examinedFiles = new PersistentFileList(
 				Globals.EXAMINED_FILES_LIST_FILE);
@@ -46,7 +51,7 @@ public class MainScanner {
 		else {
 			resultsWriter = new BufferedWriter(new FileWriter(result));
 			resultsWriter.write(
-					"Sample; LockDetected; TextDetected; TextScore; RW Permission; EncryptionDetected; Comment; TimedOut; Classified files");
+					"Sample; LockDetected; TextDetected; TextScore; RW Permission; EncryptionDetected; DeviceAdminUsed; DeviceAdminPolicies; Comment; TimedOut; Classified files");
 			resultsWriter.newLine();
 		}
 
@@ -57,7 +62,7 @@ public class MainScanner {
 			performancesWriter = new BufferedWriter(
 					new FileWriter(Globals.PERFORMANCE_FILE));
 			performancesWriter.write(
-					"Sample; LockDetectionTime; TextDetectionTime; EncryptionDetectionTime; UnpackingTime; SmaliClassCount; SmaliSize; ApkSize");
+					"Sample; LockDetectionTime; TextDetectionTime; EncryptionDetectionTime; DeviceAdminDetectionTime; UnpackingTime; SmaliClassCount; SmaliSize; ApkSize");
 			performancesWriter.newLine();
 		}
 
@@ -313,11 +318,15 @@ public class MainScanner {
 				AcceptanceStrategy.fail());
 		final Wrapper<Boolean> encryptionDetected = new Wrapper<Boolean>(false);
 		final Wrapper<Boolean> hasRWPermission = new Wrapper<>(false);
+		final Wrapper<Boolean> deviceAdminUsed = new Wrapper<Boolean>(false);
+		final Wrapper<List<Policy>> deviceAdminPolicies = new Wrapper<List<Policy>>(null);
 		final Wrapper<Double> lockDetectionTime = new Wrapper<Double>(
 				(double) ANALYSIS_TIMEOUT);
 		final Wrapper<Double> textDetectionTime = new Wrapper<Double>(
 				(double) ANALYSIS_TIMEOUT);
 		final Wrapper<Double> encryptionDetectionTime = new Wrapper<Double>(
+				(double) ANALYSIS_TIMEOUT);
+		final Wrapper<Double> deviceAdminDetectionTime = new Wrapper<Double>(
 				(double) ANALYSIS_TIMEOUT);
 
 		ExecutorService executor = Executors.newFixedThreadPool(3);
@@ -389,6 +398,41 @@ public class MainScanner {
 						encryptionDetectionTime.value = time;
 				}
 			});
+		
+		if (!noDeviceAdminDetection) {
+			executor.submit(new Runnable() {
+				
+				@Override
+				public void run() {
+					Double time = Stopwatch.time(new Runnable() {
+						
+						@Override
+						public void run() {
+							deviceAdminDetector.setTarget(applicationData.getDecodedPackage());
+							
+							Wrapper<DeviceAdminResult> deviceAdminResult = deviceAdminDetector.detect();
+							if (deviceAdminResult != null) {
+								if (deviceAdminResult.value != null) {
+									DeviceAdminResult res = deviceAdminResult.value;
+									
+									if (deviceAdminPolicies != null)
+										deviceAdminPolicies.value = res.getPolicies();
+									
+									if (deviceAdminUsed != null)
+										deviceAdminUsed.value = true;
+									
+									// No longer needed
+									deviceAdminResult.value = null;
+								}
+							}
+						}
+					});
+					
+					if (deviceAdminDetectionTime != null)
+						deviceAdminDetectionTime.value = time;
+				}
+			});
+		}
 
 		boolean timedOut = false;
 		executor.shutdown();
@@ -404,23 +448,26 @@ public class MainScanner {
 
 		try {
 			resultsWriter.write(String.format(
-					"%s; %b; %b; %f; %b; %b; \"%s\"; %b; %s\n",
+					"%s; %b; %b; %f; %b; %b; %b; %s; \"%s\"; %b; %s\n",
 					apkName,
 					lockDetected.value,
 					textDetected.value.isAccepted(),
 					textDetected.value.getScore(),
 					hasRWPermission.value,
 					encryptionDetected.value,
+					deviceAdminUsed.value,
+					deviceAdminPolicies.value,
 					textDetected.value.getComment(),
 					timedOut,
 					textDetected.value.getFileClassification()));
 
 			performancesWriter.write(
-					String.format("%s; %f; %f; %f; %f; %d; %d; %d\n",
+					String.format("%s; %f; %f; %f; %f; %f; %d; %d; %d\n",
 							apkName,
 							lockDetectionTime.value,
 							textDetectionTime.value,
 							encryptionDetectionTime.value,
+							deviceAdminDetectionTime.value,
 							unpackingTime,
 							applicationData.getSmaliLoader().getClassesCount(),
 							applicationData	.getSmaliLoader()
@@ -514,7 +561,7 @@ public class MainScanner {
 	private static final int UNPACKING_WAIT_TIME = 10; // seconds
 	private static final int ANALYSIS_WAIT_TIME = 10;
 
-	private static final int ANALYSIS_TIMEOUT = 10*60; // seconds
+	private static final int ANALYSIS_TIMEOUT = 10 * 60; // seconds
 
 	// Maximum number of times analysis can stall: beyond this, the program
 	// assumes the analysis thread has
@@ -532,6 +579,7 @@ public class MainScanner {
 	private static Boolean noLock = false;
 	private static Boolean noEncryption = false;
 	private static Boolean noTextDetection = false;
+	private static Boolean noDeviceAdminDetection = false;
 
 	private static PersistentFileList examinedFiles;
 	private static BufferedWriter resultsWriter;
@@ -540,6 +588,7 @@ public class MainScanner {
 	private static MultiLockingStrategy multiLockingStrategy;
 	private static MultiResourceScanner multiResourceScanner;
 	private static EncryptionFlowDetector encryptionFlowDetector;
+	private static DeviceAdminDetector deviceAdminDetector;
 
 	private static List<File> availableFiles;
 	private static List<ApplicationData> availableUnpackedData;

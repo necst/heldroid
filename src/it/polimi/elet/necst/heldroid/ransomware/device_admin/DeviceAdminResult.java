@@ -64,6 +64,7 @@ public class DeviceAdminResult {
 	}
 	
 	private List<Policy> policies;
+	private boolean deviceAdminUsed;
 	
 	public DeviceAdminResult() {
 		this.policies = new LinkedList<>();
@@ -98,6 +99,14 @@ public class DeviceAdminResult {
 		if (policies != null) {
 			policies.clear();
 		}
+	}
+	
+	public boolean isDeviceAdminUsed() {
+		return deviceAdminUsed;
+	}
+	
+	public void setDeviceAdminUsed(boolean deviceAdminUsed) {
+		this.deviceAdminUsed = deviceAdminUsed;
 	}
 
 }
