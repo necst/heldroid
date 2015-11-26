@@ -422,7 +422,7 @@ public class MainScanner {
 										deviceAdminUsed.value = true;
 									
 									// No longer needed
-									deviceAdminResult.value = null;
+									deviceAdminResult = null;
 								}
 							}
 						}
