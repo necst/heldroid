@@ -120,6 +120,25 @@ public class FileSystem {
 
         return files;
     }
+    
+    public static List<File> listFilesRecursively(File directory, FilenameFilter filter) {
+    	List<File> files = new ArrayList<File>();
+    	File[] array = directory.listFiles();
+    	
+    	if (array == null) {
+    		return files;
+    	}
+    	
+    	for (File file : array) {
+    		if (file.isDirectory()) {
+    			files.addAll(listFilesRecursively(file, filter));
+    		} else if (filter.accept(file.getParentFile(), file.getName())) {
+    			files.add(file);
+    		}
+    	}
+    	
+    	return files;
+    }
 
     public static List<File> listFilesRecursively(File directory, final String suffix) {
         List<File> files = new ArrayList<File>();

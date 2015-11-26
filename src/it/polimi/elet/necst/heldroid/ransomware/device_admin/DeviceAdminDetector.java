@@ -30,6 +30,7 @@ import org.w3c.dom.Element;
 
 import it.polimi.elet.necst.heldroid.apk.DecodedPackage;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult.Policy;
+import it.polimi.elet.necst.heldroid.utils.FileSystem;
 import it.polimi.elet.necst.heldroid.utils.Wrapper;
 import it.polimi.elet.necst.heldroid.utils.Xml;
 
@@ -57,8 +58,10 @@ public class DeviceAdminDetector {
 
 	/**
 	 * Creates a {@code DeviceAdminDetector} instance
-	 * @throws ParserConfigurationException if it is not possible to
-	 * create an XML parser for the AndroidManifest.xml file.
+	 * 
+	 * @throws ParserConfigurationException
+	 *             if it is not possible to create an XML parser for the
+	 *             AndroidManifest.xml file.
 	 */
 	public DeviceAdminDetector() throws ParserConfigurationException {
 		this.dbFactory = DocumentBuilderFactory.newInstance();
@@ -268,39 +271,41 @@ public class DeviceAdminDetector {
 			if (matcher.matches()) {
 
 				// This file should always be in XML folder
-				File xmlDirectory = new File(target.getResourcesDirectory(),
+				File targetDirectory = new File(target.getResourcesDirectory(),
 						"xml");
-				if (xmlDirectory.exists() && xmlDirectory.isDirectory()) {
+				if (targetDirectory.exists() && targetDirectory.isDirectory()) {
 
-					final String fileName = matcher.group(2);
+					final String fileName = matcher.group("name");
 
-					/*
-					 * Some files have no extension, so let's check both with
-					 * and without .xml extension
-					 */
-					File[] matchingFiles = xmlDirectory.listFiles(
-							new FilenameFilter() {
+					if (fileName != null && fileName.length() > 0) {
 
-								@Override
-								public boolean accept(File dir, String name) {
-									String regex = "^" + fileName
-											+ "(\\.\\w+)?$";
-									return name.matches(regex);
-								}
+						FilenameFilter filter = new FilenameFilter() {
+							/*
+							 * Some files have no extension, so let's check both
+							 * with and without .xml extension
+							 */
+							@Override
+							public boolean accept(File dir, String name) {
+								String regex = "^" + fileName + "(\\.\\w+)?$";
+								return name.matches(regex);
+							}
+						};
 
-							});
+						List<File> matchingFiles = FileSystem.listFilesRecursively(
+								target.getResourcesDirectory(), filter);
 
-					// Should never happen
-					if (matchingFiles.length == 0) {
-						System.err.println(
-								"Error: policies file not found in res/xml/ folder");
-						return new Wrapper<DeviceAdminResult>(null);
+						// Should never happen
+						if (matchingFiles.size() == 0) {
+							System.err.println(
+									"Error: policies file not found in res subfolders");
+							return new Wrapper<DeviceAdminResult>(null);
+						}
+
+						// File policiesFile = new File(xmlDirectory, fileName);
+						File policiesFile = matchingFiles.get(0);
+
+						return parseDeviceAdminPoliciesFile(policiesFile);
 					}
-
-					// File policiesFile = new File(xmlDirectory, fileName);
-					File policiesFile = matchingFiles[0];
-
-					return parseDeviceAdminPoliciesFile(policiesFile);
 				}
 			}
 		}

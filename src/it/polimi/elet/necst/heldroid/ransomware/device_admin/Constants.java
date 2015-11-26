@@ -26,14 +26,13 @@ public interface Constants {
 	/* Regex */
 	/**
 	 * A regex for identifying Android xml file references, such as:
-	 * {@code @xml/foo_FILE1}
-	 * This regex has 2 groups: the first for the resource type (such as {@code xml}),
-	 * and the second for the resource name (such as {@code foo_FILE1}).
-	 * 
-	 * NOTE: In this implementation we make no distinction between the resource type
-	 * and the package name, since the latter is optional and usually omitted
-	 * (in theory the correct syntax is
 	 * {@code @[<package-name>:]<resource-type>/<resource-name>})
+	 * This regex has 3 named groups:
+	 * <ol>
+	 * 	<li>{@code package}, that contains the optional package name</li>
+	 * 	<li>{@code type}, that contains the resource type</li>
+	 *  <li>{@code name}, that contains the resource name</li>
+	 * </ol>
 	 */
-	static final String RESOURCE_REGEX = "\\@(\\w+)\\/([\\w_]+)";
+	static final String RESOURCE_REGEX = "^\\@(?:(?<package>\\w+(?:\\.\\w+)*)(?::)(?<type>\\w+)\\/(?<name>\\w+))$";
 }
