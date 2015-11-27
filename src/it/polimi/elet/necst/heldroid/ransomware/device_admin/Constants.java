@@ -34,5 +34,5 @@ public interface Constants {
 	 *  <li>{@code name}, that contains the resource name</li>
 	 * </ol>
 	 */
-	static final String RESOURCE_REGEX = "^\\@(?:(?<package>\\w+(?:\\.\\w+)*)(?::)(?<type>\\w+)\\/(?<name>\\w+))$";
+	static final String RESOURCE_REGEX = "^\\@(?:(?<package>\\w+(?:\\.\\w+)*)(?::))?(?<type>\\w+)\\/(?<name>\\w+)$";
 }
