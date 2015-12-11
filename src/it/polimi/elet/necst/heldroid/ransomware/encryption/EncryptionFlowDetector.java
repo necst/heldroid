@@ -34,7 +34,7 @@ public class EncryptionFlowDetector {
     private static final String SOURCE_SINKS_FILE_NAME = "SourcesAndSinks.txt";
     private static final String TAINT_WRAPPER_FILE_NAME = "EasyTaintWrapperSource.txt";
 
-    private static final int FLOW_TIMEOUT = 10*60; // seconds
+    private static final int FLOW_TIMEOUT = 1*60; // seconds
 
     private DocumentBuilderFactory dbFactory;
     private DocumentBuilder db;

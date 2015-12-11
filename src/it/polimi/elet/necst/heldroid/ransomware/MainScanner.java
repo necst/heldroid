@@ -440,6 +440,7 @@ public class MainScanner {
 		try {
 			if (!executor.awaitTermination(ANALYSIS_TIMEOUT,
 					TimeUnit.SECONDS)) {
+				System.err.println("Analysis timed out");
 				executor.shutdownNow();
 				timedOut = true;
 			}

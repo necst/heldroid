@@ -52,9 +52,9 @@ public class DeviceAdminDetector {
 	private static final Pattern POLICIES_FILE_REGEX = Pattern.compile(
 			RESOURCE_REGEX);
 
-	private DecodedPackage target;
-	private DocumentBuilderFactory dbFactory;
-	private DocumentBuilder db;
+	private DecodedPackage mTarget;
+	private DocumentBuilderFactory mDbFactory;
+	private DocumentBuilder mDb;
 
 	/**
 	 * Creates a {@code DeviceAdminDetector} instance
@@ -64,8 +64,8 @@ public class DeviceAdminDetector {
 	 *             AndroidManifest.xml file.
 	 */
 	public DeviceAdminDetector() throws ParserConfigurationException {
-		this.dbFactory = DocumentBuilderFactory.newInstance();
-		this.db = dbFactory.newDocumentBuilder();
+		this.mDbFactory = DocumentBuilderFactory.newInstance();
+		this.mDb = mDbFactory.newDocumentBuilder();
 	}
 
 	/**
@@ -148,7 +148,7 @@ public class DeviceAdminDetector {
 	 */
 	private String findDeviceAdminPoliciesFile() {
 		try {
-			Document document = db.parse(target.getAndroidManifest());
+			Document document = mDb.parse(mTarget.getAndroidManifest());
 			Element root = document.getDocumentElement();
 
 			Collection<Element> receivers = Xml.getElementsByTagName(root,
@@ -203,10 +203,11 @@ public class DeviceAdminDetector {
 
 		if (policiesFile.exists()) {
 			try {
-				Document document = db.parse(policiesFile);
+				Document document = mDb.parse(policiesFile);
 				Element root = document.getDocumentElement();
 
-				if (root.getTagName().equals(DEVICE_ADMIN_TAG)) {
+				if (root.getTagName()
+						.equals(DEVICE_ADMIN_TAG)) {
 					// This app makes use of <device-admin>
 					result = new DeviceAdminResult();
 					result.setDeviceAdminUsed(true);
@@ -259,7 +260,7 @@ public class DeviceAdminDetector {
 	 *             if a {@link #setTarget(DecodedPackage) target} is not set
 	 */
 	public Wrapper<DeviceAdminResult> detect() throws IllegalStateException {
-		if (target == null) {
+		if (mTarget == null) {
 			throw new IllegalStateException("Target is not set");
 		}
 
@@ -271,7 +272,7 @@ public class DeviceAdminDetector {
 			if (matcher.matches()) {
 
 				// This file should always be in XML folder
-				File targetDirectory = new File(target.getResourcesDirectory(),
+				File targetDirectory = new File(mTarget.getResourcesDirectory(),
 						"xml");
 				if (targetDirectory.exists() && targetDirectory.isDirectory()) {
 
@@ -292,7 +293,7 @@ public class DeviceAdminDetector {
 						};
 
 						List<File> matchingFiles = FileSystem.listFilesRecursively(
-								target.getResourcesDirectory(), filter);
+								mTarget.getResourcesDirectory(), filter);
 
 						// Should never happen
 						if (matchingFiles.size() == 0) {
@@ -304,7 +305,30 @@ public class DeviceAdminDetector {
 						// File policiesFile = new File(xmlDirectory, fileName);
 						File policiesFile = matchingFiles.get(0);
 
-						return parseDeviceAdminPoliciesFile(policiesFile);
+						Wrapper<DeviceAdminResult> result = parseDeviceAdminPoliciesFile(
+								policiesFile);
+
+						if (result != null && result.value != null
+								&& result.value.getPolicies() != null) {
+							for (Policy policy : new Policy[] {
+									Policy.USES_POLICY_RESET_PASSWORD,
+									Policy.USES_POLICY_WIPE_DATA }) {
+								// If policy is not used, don't waste time
+								if (!result.value.getPolicies().contains(policy)) {
+									continue;
+								}
+								
+								boolean used = isPolicyUsed(policy);
+
+								if (!used) {
+									System.out.printf("Policy %S is not used. Removing it...\n", policy.name());
+									result.value.getPolicies()
+												.remove(policy);
+								}
+							}
+						}
+
+						return result;
 					}
 				}
 			}
@@ -314,11 +338,55 @@ public class DeviceAdminDetector {
 	}
 
 	/**
+	 * Checks if the {@code policy} is actually used inside the smali code. This
+	 * check is performed by looking for dangerous method calls inside any of
+	 * the smali files of the app referenced by the {@code target} instance
+	 * variable.
+	 * 
+	 * Please note that the currently supported policies are only
+	 * {@link Policy#USES_POLICY_WIPE_DATA} and
+	 * {@link Policy#USES_POLICY_RESET_PASSWORD}.
+	 * 
+	 * @param policy
+	 *            The policy to test
+	 * @return {@code true} if the code contains such method calls,
+	 *         {@code false} otherwise.
+	 */
+	private boolean isPolicyUsed(Policy policy) {
+		if (policy == null) {
+			throw new IllegalArgumentException(
+					"You must provide a valid policy");
+		}
+
+		String regex = null;
+
+		switch (policy) {
+		case USES_POLICY_WIPE_DATA:
+			// Look for methods: DevicePolicyManager.wipeData(int)
+			regex = "^.*Landroid/app/admin/DevicePolicyManager;->wipeData\\(I\\)V.*$";
+			break;
+
+		case USES_POLICY_RESET_PASSWORD:
+			// Look for methods: DevicePolicyManager.resetPassword(String, int)
+			regex = "^.*Landroid/app/admin/DevicePolicyManager;->resetPassword\\(Ljava/lang/String;I\\)Z.*$";
+			break;
+
+		default:
+			throw new IllegalArgumentException(
+					"This policy is not supported yet.");
+		}
+
+		File smaliDirectory = mTarget.getSmaliDirectory();
+
+		return FileSystem.searchRecursively(smaliDirectory, regex);
+	}
+
+	/**
 	 * 
 	 * @param target
 	 *            The target for the APK to scan.
 	 */
 	public void setTarget(DecodedPackage target) {
-		this.target = target;
+		this.mTarget = target;
 	}
 }

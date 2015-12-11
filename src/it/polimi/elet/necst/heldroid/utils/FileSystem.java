@@ -1,11 +1,19 @@
 package it.polimi.elet.necst.heldroid.utils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class FileSystem {
     public static boolean deleteDirectory(File directory) {
@@ -121,6 +129,16 @@ public class FileSystem {
         return files;
     }
     
+    /**
+     * Lists all files contained inside {@code directory} or
+     * its subfolders.
+     * @param directory
+     * @return
+     */
+    public static List<File> listFilesRecursively(File directory) {
+    	return FileSystem.listFilesRecursively(directory, "");
+    }
+    
     public static List<File> listFilesRecursively(File directory, FilenameFilter filter) {
     	List<File> files = new ArrayList<File>();
     	File[] array = directory.listFiles();
@@ -154,5 +172,40 @@ public class FileSystem {
                 files.add(file);
 
         return files;
+    }
+    
+    /**
+     * Searches recursively in all files contained inside {@code directory}
+     * (or its subfolders) for the regular expression {@code regex}.
+     * @param directory The parent directory in which perform the search
+     * @param regex The regex to search for
+     * @return {@code true} if at least one file contains a string that matches
+     * the {@code regex}, {@code false} otherwise.
+     */
+    public static boolean searchRecursively(File directory, String regex) {
+    	if (directory == null) {
+    		throw new IllegalArgumentException("Directory cannot be null");
+    	}
+    	
+    	if (regex == null) {
+    		throw new IllegalArgumentException("You must provide a valid pattern");
+    	}
+    	
+    	List<File> files = FileSystem.listFilesRecursively(directory, "smali");
+    	
+    	for (File f : files) {
+    		
+    		try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
+    			String line;
+    			while ((line = reader.readLine()) != null) {
+    				if (line.matches(regex))
+    					return true;
+    			}
+    		} catch (IOException e) {
+    			e.printStackTrace();
+    		}
+    	}
+    	
+    	return false;
     }
 }
