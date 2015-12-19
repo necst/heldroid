@@ -1,316 +1,475 @@
 package it.polimi.elet.necst.heldroid.ransomware;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import javax.xml.parsers.ParserConfigurationException;
+
 import it.polimi.elet.necst.heldroid.pipeline.ApplicationData;
-import it.polimi.elet.necst.heldroid.utils.Options;
-import it.polimi.elet.necst.heldroid.utils.PersistentFileList;
-import it.polimi.elet.necst.heldroid.utils.Wrapper;
-import soot.jimple.infoflow.results.InfoflowResults;
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminDetector;
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult;
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult.Policy;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionResult;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
+import it.polimi.elet.necst.heldroid.utils.FileSystem;
+import it.polimi.elet.necst.heldroid.utils.Options;
+import it.polimi.elet.necst.heldroid.utils.PersistentFileList;
 import it.polimi.elet.necst.heldroid.utils.Stopwatch;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import it.polimi.elet.necst.heldroid.utils.Wrapper;
+import soot.jimple.infoflow.results.InfoflowResults;
 
 public class MainScannerSequential {
-    public static void main(String[] args) throws ParserConfigurationException, IOException, InterruptedException {
-        final File target = new File(args[1]);
-        final File result = new File(args[2]);
-        final Options options = new Options(args);
 
-        silentMode = options.contains("-s");
-        noLock = options.contains("-nl");
-        noEncryption = options.contains("-ne");
+	/**
+	 * Contains the directory in which the JSON report should be saved
+	 */
+	private static File jsonDirectory;
 
-        multiLockingStrategy = Factory.createLockingStrategy();
-        multiResourceScanner = Factory.createResourceScanner();
-        encryptionFlowDetector = Factory.createEncryptionFlowDetector();
+	public static void main(String[] args) throws ParserConfigurationException,
+			IOException, InterruptedException {
+		final File target = new File(args[1]);
+		final File result = new File(args[2]);
+		MainScannerSequential.jsonDirectory = new File(args[3]);
+		final Options options = new Options(args);
 
-        examinedFiles = new PersistentFileList(Globals.EXAMINED_FILES_LIST_FILE);
+		silentMode = options.contains("-s");
+		noLock = options.contains("-nl");
+		noEncryption = options.contains("-ne");
+		noDeviceAdminDetection = options.contains("-na");
 
-        if (result.exists())
-            resultsWriter = new BufferedWriter(new FileWriter(result, true));
-        else {
-            resultsWriter = new BufferedWriter(new FileWriter(result));
-            resultsWriter.write("Sample; LockDetected; TextDetected; TextScore; EncryptionDetected; Comment; TimedOut; FileClassification");
-            resultsWriter.newLine();
-        }
+		multiLockingStrategy = Factory.createLockingStrategy();
+		multiResourceScanner = Factory.createResourceScanner();
+		encryptionFlowDetector = Factory.createEncryptionFlowDetector();
+		deviceAdminDetector = Factory.createDeviceAdminDetector();
 
-        if (Globals.PERFORMANCE_FILE.exists())
-            performancesWriter = new BufferedWriter(new FileWriter(Globals.PERFORMANCE_FILE, true));
-        else {
-            performancesWriter = new BufferedWriter(new FileWriter(Globals.PERFORMANCE_FILE));
-            performancesWriter.write("Sample, LockDetectionTime, TextDetectionTime, EncryptionDetectionTime, UnpackingTime, SmaliClassCount, SmaliSize, ApkSize");
-            performancesWriter.newLine();
-        }
+		examinedFiles = new PersistentFileList(
+				Globals.EXAMINED_FILES_LIST_FILE);
 
-        Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread t, Throwable e) {
-                if ((t != null) && (t.getName() != null))
-                    System.out.println("In thread : " + t.getName());
+		if (result.exists())
+			resultsWriter = new BufferedWriter(new FileWriter(result, true));
+		else {
+			resultsWriter = new BufferedWriter(new FileWriter(result));
+			resultsWriter.write(
+					"Sample; LockDetected; TextDetected; TextScore; RW Permission; EncryptionDetected; DeviceAdminUsed; DeviceAdminPolicies; Comment; TimedOut; Classified Files");
+			resultsWriter.newLine();
+		}
 
-                if ((e != null) && (e.getMessage() != null)) {
-                    System.out.println(e.getClass().getName() + ": " + e.getMessage());
-                    if (e.getStackTrace() != null)
-                        for (StackTraceElement ste : e.getStackTrace())
-                            if (ste != null)
-                                System.out.println(ste.getFileName() + " at line " + ste.getLineNumber());
-                }
-            }
-        });
+		if (Globals.PERFORMANCE_FILE.exists())
+			performancesWriter = new BufferedWriter(
+					new FileWriter(Globals.PERFORMANCE_FILE, true));
+		else {
+			performancesWriter = new BufferedWriter(
+					new FileWriter(Globals.PERFORMANCE_FILE));
+			performancesWriter.write(
+					"Sample; LockDetectionTime; TextDetectionTime; EncryptionDetectionTime; DeviceAdminDetectionTime; UnpackingTime; SmaliClassCount; SmaliSize; ApkSize");
+			performancesWriter.newLine();
+		}
 
-        if (target.isDirectory()) {
-            enumerateDirectory(target);
-        } else {
-            String name = target.getName().toLowerCase();
+		Thread	.currentThread()
+				.setUncaughtExceptionHandler(
+						new Thread.UncaughtExceptionHandler() {
+							@Override
+							public void uncaughtException(Thread t,
+									Throwable e) {
+								if ((t != null) && (t.getName() != null))
+									System.out.println(
+											"In thread : " + t.getName());
 
-            if (name.endsWith(".apklist"))
-                readFileList(target);
-            else if (name.endsWith(".apk"))
-                checkFile(target);
-        }
+								if ((e != null) && (e.getMessage() != null)) {
+									System.out.println(e.getClass()
+														.getName()
+											+ ": " + e.getMessage());
+									if (e.getStackTrace() != null)
+										for (StackTraceElement ste : e.getStackTrace())
+											if (ste != null)
+												System.out.println(ste
+																		.getFileName()
+														+ " at line "
+														+ ste.getLineNumber());
+								}
+							}
+						});
 
-        closeWriters();
-    }
+		if (target.isDirectory()) {
+			enumerateDirectory(target);
+		} else {
+			String name = target.getName()
+								.toLowerCase();
 
-    private static void println(String message) {
-        if (!silentMode)
-            System.out.println(message);
-    }
+			if (name.endsWith(".apklist"))
+				readFileList(target);
+			else if (name.endsWith(".apk"))
+				checkFile(target);
+		}
 
-    private static void print(String message) {
-        if (!silentMode)
-            System.out.print(message);
-    }
+		closeWriters();
+	}
 
+	private static void println(String message) {
+		if (!silentMode)
+			System.out.println(message);
+	}
 
-    private static void enumerateDirectory(File directory) {
-        for (File file : directory.listFiles()) {
-            checkFile(file);
+	private static void print(String message) {
+		if (!silentMode)
+			System.out.print(message);
+	}
 
-            if (file.isDirectory())
-                enumerateDirectory(file);
-        }
-    }
+	private static void enumerateDirectory(File directory) {
+		for (File file : directory.listFiles()) {
+			checkFile(file);
 
-    private static void readFileList(File file) {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(file));
-            String line = null;
+			if (file.isDirectory())
+				enumerateDirectory(file);
+		}
+	}
 
-            while((line = reader.readLine()) != null) {
-                File readFile = new File(line);
+	private static void readFileList(File file) {
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(file));
+			String line = null;
 
-                if (readFile.exists())
-                    checkFile(readFile);
-            }
+			while ((line = reader.readLine()) != null) {
+				File readFile = new File(line);
 
-            reader.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+				if (readFile.exists())
+					checkFile(readFile);
+			}
 
-    private static void checkFile(File file) {
-        if (examinedFiles.contains(file)) {
-            println("Skipped: " + file.getName());
-            return;
-        }
+			reader.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
-        if (!file.getName().toLowerCase().endsWith(".apk")) {
-            return;
-        }
+	private static void checkFile(File file) {
+		if (examinedFiles.contains(file)) {
+			println("Skipped: " + file.getName());
+			return;
+		}
 
-        final Wrapper<Double> unpackingTime = new Wrapper<Double>(0.0);
-        final ApplicationData data = unpack(file, unpackingTime);
+		if (!file	.getName()
+					.toLowerCase()
+					.endsWith(".apk")) {
+			return;
+		}
 
-        if (data == null) {
-            return;
-        }
+		final Wrapper<Double> unpackingTime = new Wrapper<Double>(0.0);
+		final ApplicationData data = unpack(file, unpackingTime);
 
-        scanData(data, unpackingTime.value);
-    }
+		if (data == null) {
+			return;
+		}
 
+		scanData(data, unpackingTime.value);
+	}
 
-    private static ApplicationData unpack(final File file, final Wrapper<Double> unpackingTime) {
-        final Wrapper<ApplicationData> resultWrapper = new Wrapper<ApplicationData>(null);
-        final Wrapper<Exception> exceptionWrapper = new Wrapper<Exception>(null);
+	private static ApplicationData unpack(final File file,
+			final Wrapper<Double> unpackingTime) {
+		final Wrapper<ApplicationData> resultWrapper = new Wrapper<ApplicationData>(
+				null);
+		final Wrapper<Exception> exceptionWrapper = new Wrapper<Exception>(
+				null);
 
-        println("Unpacking: " + file.getName());
+		println("Unpacking: " + file.getName());
 
-        unpackingTime.value = Stopwatch.time(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    resultWrapper.value = ApplicationData.open(file);
-                } catch (Exception e) {
-                    exceptionWrapper.value = e;
-                }
-            }
-        });
+		unpackingTime.value = Stopwatch.time(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					resultWrapper.value = ApplicationData.open(file);
+				} catch (Exception e) {
+					exceptionWrapper.value = e;
+				}
+			}
+		});
 
-        if (resultWrapper.value != null)
-            println("Unpacked: " + file.getName());
-        else if (exceptionWrapper.value != null)
-            println("Dropped: " + file.getName() + " : " + exceptionWrapper.value.getMessage());
+		if (resultWrapper.value != null)
+			println("Unpacked: " + file.getName());
+		else if (exceptionWrapper.value != null)
+			println("Dropped: " + file.getName() + " : "
+					+ exceptionWrapper.value.getMessage());
 
-        return resultWrapper.value;
-    }
+		return resultWrapper.value;
+	}
 
-    private static void scanData(final ApplicationData applicationData, Double unpackingTime) {
-        String apkName = applicationData.getDecodedPackage().getOriginalApk().getAbsolutePath();
-        println("Submitted: " + apkName);
+	private static void scanData(final ApplicationData applicationData,
+			Double unpackingTime) {
+		String apkName = applicationData.getDecodedPackage()
+										.getOriginalApk()
+										.getAbsolutePath();
+		println("Submitted: " + apkName);
 
-        examinedFiles.add(applicationData.getDecodedPackage().getOriginalApk());
+		examinedFiles.add(applicationData	.getDecodedPackage()
+											.getOriginalApk());
 
-        final Wrapper<Boolean> lockDetected = new Wrapper<Boolean>(false);
-        final Wrapper<AcceptanceStrategy.Result> textDetected = new Wrapper<AcceptanceStrategy.Result>(AcceptanceStrategy.fail());
-        final Wrapper<Boolean> encryptionDetected = new Wrapper<Boolean>(false);
-        final Wrapper<Boolean> hasRWPermission = new Wrapper<>(false);
-        final Wrapper<Double> lockDetectionTime = new Wrapper<Double>((double)ANALYSIS_TIMEOUT);
-        final Wrapper<Double> textDetectionTime = new Wrapper<Double>((double)ANALYSIS_TIMEOUT);
-        final Wrapper<Double> encryptionDetectionTime = new Wrapper<Double>((double)ANALYSIS_TIMEOUT);
+		final Wrapper<Boolean> lockDetected = new Wrapper<Boolean>(false);
+		final Wrapper<AcceptanceStrategy.Result> textDetected = new Wrapper<AcceptanceStrategy.Result>(
+				AcceptanceStrategy.fail());
+		final Wrapper<Boolean> encryptionDetected = new Wrapper<Boolean>(false);
+		final Wrapper<Boolean> hasRWPermission = new Wrapper<>(false);
+		final Wrapper<Boolean> deviceAdminUsed = new Wrapper<>(false);
+		final Wrapper<List<Policy>> deviceAdminPolicies = new Wrapper<>(null);
+		final Wrapper<Double> lockDetectionTime = new Wrapper<Double>(
+				(double) ANALYSIS_TIMEOUT);
+		final Wrapper<Double> textDetectionTime = new Wrapper<Double>(
+				(double) ANALYSIS_TIMEOUT);
+		final Wrapper<Double> encryptionDetectionTime = new Wrapper<Double>(
+				(double) ANALYSIS_TIMEOUT);
+		final Wrapper<Double> deviceAdminDetectionTime = new Wrapper<Double>(
+				(double) ANALYSIS_TIMEOUT);
 
-        ExecutorService executor = Executors.newFixedThreadPool(3);
+		ExecutorService executor = Executors.newFixedThreadPool(3);
 
-        executor.submit(new Runnable() {
-            @Override
-            public void run() {
-                Double time = Stopwatch.time(new Runnable() {
-                    @Override
-                    public void run() {
-                        multiResourceScanner.setUnpackedApkDirectory(applicationData.getDecodedPackage().getDecodedDirectory());
-                        AcceptanceStrategy.Result result = multiResourceScanner.evaluate();
-                        if (textDetected != null)
-                            textDetected.value = result;
-                    }
-                });
+		executor.submit(new Runnable() {
+			@Override
+			public void run() {
+				Double time = Stopwatch.time(new Runnable() {
+					@Override
+					public void run() {
+						multiResourceScanner.setUnpackedApkDirectory(
+								applicationData	.getDecodedPackage()
+												.getDecodedDirectory());
+						AcceptanceStrategy.Result result = multiResourceScanner.evaluate();
+						if (textDetected != null)
+							textDetected.value = result;
+					}
+				});
 
-                if (textDetectionTime != null)
-                    textDetectionTime.value = time;
-            }
-        });
+				if (textDetectionTime != null)
+					textDetectionTime.value = time;
+			}
+		});
 
-        if (!noLock)
-            executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    Double time = Stopwatch.time(new Runnable() {
-                        @Override
-                        public void run() {
-                            multiLockingStrategy.setTarget(applicationData.getDecodedPackage());
-                            Boolean result = lockDetected.value = multiLockingStrategy.detect();
-                            if (lockDetected != null)
-                                lockDetected.value = result;
-                        }
-                    });
+		if (!noLock)
+			executor.submit(new Runnable() {
+				@Override
+				public void run() {
+					Double time = Stopwatch.time(new Runnable() {
+						@Override
+						public void run() {
+							multiLockingStrategy.setTarget(
+									applicationData.getDecodedPackage());
+							Boolean result = lockDetected.value = multiLockingStrategy.detect();
+							if (lockDetected != null)
+								lockDetected.value = result;
+						}
+					});
 
-                    if (lockDetectionTime != null)
-                        lockDetectionTime.value = time;
-                }
-            });
+					if (lockDetectionTime != null)
+						lockDetectionTime.value = time;
+				}
+			});
 
-        if (!noEncryption)
-            executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    Double time = Stopwatch.time(new Runnable() {
-                        @Override
-                        public void run() {
-                            encryptionFlowDetector.setTarget(applicationData.getDecodedPackage());
-                            
-                            Wrapper<EncryptionResult> encryptionResult = encryptionFlowDetector.detect();
-                            InfoflowResults infoFlow = encryptionResult.value.getInfoFlowResults();
-                            Boolean result = (infoFlow != null && infoFlow.getResults().size() > 0);
-                            if (encryptionDetected != null)
-                                encryptionDetected.value = result;
-                            if (hasRWPermission != null)
-                            	hasRWPermission.value = encryptionResult.value.isWritable();
-                        }
-                    });
+		if (!noEncryption)
+			executor.submit(new Runnable() {
+				@Override
+				public void run() {
+					Double time = Stopwatch.time(new Runnable() {
+						@Override
+						public void run() {
+							encryptionFlowDetector.setTarget(
+									applicationData.getDecodedPackage());
 
-                    if (encryptionDetectionTime != null)
-                        encryptionDetectionTime.value = time;
-                }
-            });
+							Wrapper<EncryptionResult> encryptionResult = encryptionFlowDetector.detect();
+							InfoflowResults infoFlow = encryptionResult.value.getInfoFlowResults();
+							Boolean result = (infoFlow != null
+									&& infoFlow	.getResults()
+												.size() > 0);
+							if (encryptionDetected != null)
+								encryptionDetected.value = result;
+							if (hasRWPermission != null)
+								hasRWPermission.value = encryptionResult.value.isWritable();
+						}
+					});
 
-        boolean timedOut = false;
-        executor.shutdown();
+					if (encryptionDetectionTime != null)
+						encryptionDetectionTime.value = time;
+				}
+			});
 
-        try {
-            if (!executor.awaitTermination(ANALYSIS_TIMEOUT, TimeUnit.SECONDS)) {
-                executor.shutdownNow();
-                timedOut = true;
-            }
-        } catch (InterruptedException e) { }
+		if (!noDeviceAdminDetection)
+			executor.submit(new Runnable() {
+				@Override
+				public void run() {
+					Double time = Stopwatch.time(new Runnable() {
+						@Override
+						public void run() {
+							deviceAdminDetector.setTarget(
+									applicationData.getDecodedPackage());
 
-        try {
-            resultsWriter.write(String.format("%s; %b; %b; %f; %b; %b; \"%s\"; %b; %s\n",
-                    apkName,
-                    lockDetected.value,
-                    textDetected.value.isAccepted(),
-                    textDetected.value.getScore(),
-                    hasRWPermission.value,
-                    encryptionDetected.value,
-                    textDetected.value.getComment(),
-                    timedOut,
-                    textDetected.value.getFileClassification()));
+							Wrapper<DeviceAdminResult> deviceAdminResult = deviceAdminDetector.detect();
+							if (deviceAdminResult != null) {
+								if (deviceAdminResult.value != null) {
+									DeviceAdminResult res = deviceAdminResult.value;
 
-            performancesWriter.write(String.format("%s, %f, %f, %f, %f, %d, %d, %d\n",
-                    apkName,
-                    lockDetectionTime.value,
-                    textDetectionTime.value,
-                    encryptionDetectionTime.value,
-                    unpackingTime,
-                    applicationData.getSmaliLoader().getClassesCount(),
-                    applicationData.getSmaliLoader().getTotalClassesSize(),
-                    applicationData.getDecodedPackage().getOriginalApk().length()));
+									if (deviceAdminPolicies != null)
+										deviceAdminPolicies.value = res.getPolicies();
 
-            resultsWriter.flush();
-            performancesWriter.flush();
-        } catch (IOException e) { }
+									if (deviceAdminUsed != null)
+										deviceAdminUsed.value = true;
 
-        // No longer deleting temp files
+									// No longer needed
+									deviceAdminResult = null;
+								}
+							}
+						}
+					});
 
-        if (!timedOut)
-            println("Completed: " + apkName);
-        else {
-            print("Timeout");
+					if (deviceAdminDetectionTime != null) {
+						deviceAdminDetectionTime.value = time;
+					}
+				}
+			});
 
-            if (textDetectionTime.value == ANALYSIS_TIMEOUT) print(" TextDetection");
-            if (!noLock && (lockDetectionTime.value == ANALYSIS_TIMEOUT)) print(" LockDetection");
-            if (!noEncryption && (encryptionDetectionTime.value == ANALYSIS_TIMEOUT)) print(" EncryptionDetection");
+		boolean timedOut = false;
+		executor.shutdown();
 
-            println(": " + apkName);
-        }
-    }
+		try {
+			if (!executor.awaitTermination(ANALYSIS_TIMEOUT,
+					TimeUnit.SECONDS)) {
+				executor.shutdownNow();
+				timedOut = true;
+			}
+		} catch (InterruptedException e) {
+		}
 
+		// Create JSON
+		try {
+			String hash = FileSystem.hashOf(applicationData	.getDecodedPackage()
+															.getOriginalApk());
+			File hashDirectory = new File(MainScannerSequential.jsonDirectory,
+					hash + ".json");
+			OutputStream jsonWriter = new FileOutputStream(hashDirectory);
+			String json = MainScannerSequential.buildResponseFromResults(
+					lockDetected.value,
+					hasRWPermission.value,
+					encryptionDetected.value,
+					deviceAdminUsed.value,
+					deviceAdminPolicies.value,
+					textDetected.value);
+			jsonWriter.write(json.getBytes());
+			jsonWriter.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
-    private static void closeWriters() throws IOException {
-        resultsWriter.close();
-        performancesWriter.close();
-        examinedFiles.dispose();
-    }
+		try {
+			resultsWriter.write(String.format(
+					"%s; %b; %b; %f; %b; %b; %b; %s; \"%s\"; %b; %s\n",
+					apkName,
+					lockDetected.value,
+					textDetected.value.isAccepted(),
+					textDetected.value.getScore(),
+					hasRWPermission.value,
+					encryptionDetected.value,
+					deviceAdminUsed.value,
+					deviceAdminPolicies.value,
+					textDetected.value.getComment(),
+					timedOut,
+					textDetected.value.getFileClassification()));
 
+			performancesWriter.write(
+					String.format("%s; %f; %f; %f; %f; %f; %d; %d; %d\n",
+							apkName,
+							lockDetectionTime.value,
+							textDetectionTime.value,
+							encryptionDetectionTime.value,
+							deviceAdminDetectionTime.value,
+							unpackingTime,
+							applicationData	.getSmaliLoader()
+											.getClassesCount(),
+							applicationData	.getSmaliLoader()
+											.getTotalClassesSize(),
+							applicationData	.getDecodedPackage()
+											.getOriginalApk()
+											.length()));
 
-    private static final int ANALYSIS_TIMEOUT = 40; // seconds
+			resultsWriter.flush();
+			performancesWriter.flush();
+		} catch (IOException e) {
+		}
 
-    private static Boolean silentMode = false;
-    private static Boolean noLock = false;
-    private static Boolean noEncryption = false;
+		// No longer deleting temp files
 
-    private static PersistentFileList examinedFiles;
-    private static BufferedWriter resultsWriter;
-    private static BufferedWriter performancesWriter;
+		if (!timedOut)
+			println("Completed: " + apkName);
+		else {
+			print("Timeout");
 
-    private static MultiLockingStrategy multiLockingStrategy;
-    private static MultiResourceScanner multiResourceScanner;
-    private static EncryptionFlowDetector encryptionFlowDetector;
+			if (textDetectionTime.value == ANALYSIS_TIMEOUT)
+				print(" TextDetection");
+			if (!noLock && (lockDetectionTime.value == ANALYSIS_TIMEOUT))
+				print(" LockDetection");
+			if (!noEncryption
+					&& (encryptionDetectionTime.value == ANALYSIS_TIMEOUT))
+				print(" EncryptionDetection");
+
+			println(": " + apkName);
+		}
+	}
+
+	private static String buildResponseFromResults(boolean lockDetected,
+			boolean hasRWPermission, boolean encryptionDetected,
+			boolean deviceAdminUsed, List<Policy> policies,
+			AcceptanceStrategy.Result textResult) {
+		StringBuilder builder = new StringBuilder();
+
+		builder.append("{\n");
+		builder.append(String.format("   lockDetected: %b,\n", lockDetected));
+		builder.append(String.format("   textDetected: %b,\n",
+				textResult.isAccepted()));
+		builder.append(
+				String.format("   textScore: %f,\n", textResult.getScore()));
+		builder.append(
+				String.format("   hasRWPermission: %b,\n", hasRWPermission));
+		builder.append(String.format("   encryptionDetected: %b,\n",
+				encryptionDetected));
+		builder.append(
+				String.format("   deviceAdminUsed: %b,\n", deviceAdminUsed));
+		builder.append(
+				String.format("   deviceAdminPolicies: \"%s\",\n", policies));
+		builder.append(String.format("   textComment: \"%s\",\n",
+				textResult.getComment()));
+		builder.append(String.format("   suspiciousFiles: \"%s\"\n",
+				textResult.getFileClassification()));
+		builder.append("}");
+
+		return builder.toString();
+	}
+
+	private static void closeWriters() throws IOException {
+		resultsWriter.close();
+		performancesWriter.close();
+		examinedFiles.dispose();
+	}
+
+	private static final int ANALYSIS_TIMEOUT = 40; // seconds
+
+	private static Boolean silentMode = false;
+	private static Boolean noLock = false;
+	private static Boolean noEncryption = false;
+	private static Boolean noDeviceAdminDetection = false;
+
+	private static PersistentFileList examinedFiles;
+	private static BufferedWriter resultsWriter;
+	private static BufferedWriter performancesWriter;
+
+	private static MultiLockingStrategy multiLockingStrategy;
+	private static MultiResourceScanner multiResourceScanner;
+	private static EncryptionFlowDetector encryptionFlowDetector;
+	private static DeviceAdminDetector deviceAdminDetector;
 }

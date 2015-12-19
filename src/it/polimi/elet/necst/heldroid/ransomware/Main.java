@@ -1,22 +1,31 @@
 package it.polimi.elet.necst.heldroid.ransomware;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
+
+import javax.xml.parsers.ParserConfigurationException;
+
 import com.cybozu.labs.langdetect.DetectorFactory;
 import com.cybozu.labs.langdetect.LangDetectException;
-import it.polimi.elet.necst.heldroid.utils.Options;
+
 import it.polimi.elet.necst.heldroid.apk.DecodingException;
 import it.polimi.elet.necst.heldroid.ransomware.emulation.TrafficScanner;
-import it.polimi.elet.necst.heldroid.ransomware.text.classification.*;
-import it.polimi.elet.necst.heldroid.ransomware.text.scanning.*;
-import opennlp.tools.sentdetect.*;
-import opennlp.tools.stemmer.Stemmer;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifierCollection;
+import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
+import it.polimi.elet.necst.heldroid.ransomware.text.scanning.HtmlScanner;
+import it.polimi.elet.necst.heldroid.utils.Options;
+import opennlp.tools.sentdetect.SentenceDetectorME;
+import opennlp.tools.sentdetect.SentenceModel;
+import opennlp.tools.sentdetect.SentenceSample;
+import opennlp.tools.sentdetect.SentenceSampleStream;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
 import opennlp.tools.util.TrainingParameters;
-import polyglot.ast.Throw;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
-import java.nio.charset.Charset;
 
 public class Main {
     public static void main(String args[]) throws IOException, ParserConfigurationException, DecodingException, LangDetectException, InterruptedException {
@@ -55,7 +64,7 @@ public class Main {
         System.out.println(
             "java -jar " + jarName + " op args\n" +
             "With op = (scan|pcap|learn):\n" +
-            "    scan directory output.csv: scan all apks in the specified directory and its subdirectories\n" +
+            "    scan <directory> <output.csv> <json_result_directory>: scan all apks in the specified directory and its subdirectories. Save JSON data in <json_result_directory>\n" +
             "    pcap directory: analyzes all pcaps in the second-level subdirectories of the specified directory\n" +
             "    learn lang text: learns a sentence detector model for language lang analyzing sentences\n" +
             "        from the given text file, one per line"

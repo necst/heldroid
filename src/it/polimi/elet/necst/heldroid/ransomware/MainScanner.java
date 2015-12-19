@@ -1,10 +1,22 @@
 package it.polimi.elet.necst.heldroid.ransomware;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import javax.xml.parsers.ParserConfigurationException;
+
 import it.polimi.elet.necst.heldroid.pipeline.ApplicationData;
-import it.polimi.elet.necst.heldroid.utils.Options;
-import it.polimi.elet.necst.heldroid.utils.PersistentFileList;
-import it.polimi.elet.necst.heldroid.utils.Wrapper;
-import soot.jimple.infoflow.results.InfoflowResults;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminDetector;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult.Policy;
@@ -13,23 +25,27 @@ import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionResult;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
+import it.polimi.elet.necst.heldroid.utils.FileSystem;
+import it.polimi.elet.necst.heldroid.utils.Options;
+import it.polimi.elet.necst.heldroid.utils.PersistentFileList;
 import it.polimi.elet.necst.heldroid.utils.Stopwatch;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import it.polimi.elet.necst.heldroid.utils.Wrapper;
+import soot.jimple.infoflow.results.InfoflowResults;
 
 public class MainScanner {
+
+	/**
+	 * Contains the directory in which the JSON report should be saved
+	 */
+	private static File jsonDirectory;
+
 	public static void main(String[] args) throws ParserConfigurationException,
 			IOException, InterruptedException {
 		mainArgs = args;
 
 		final File target = new File(args[1]);
 		final File result = new File(args[2]);
+		jsonDirectory = new File(args[3]);
 		final Options options = new Options(args);
 
 		silentMode = options.contains("-s");
@@ -76,7 +92,8 @@ public class MainScanner {
 				if (target.isDirectory()) {
 					enumerateDirectory(target);
 				} else {
-					String name = target.getName().toLowerCase();
+					String name = target.getName()
+										.toLowerCase();
 
 					if (name.endsWith(".apklist"))
 						readFileList(target);
@@ -170,7 +187,9 @@ public class MainScanner {
 			return;
 		}
 
-		if (file.isFile() && file.getName().toLowerCase().endsWith(".apk")) {
+		if (file.isFile() && file	.getName()
+									.toLowerCase()
+									.endsWith(".apk")) {
 			synchronized (availableFiles) {
 				availableFiles.add(file);
 			}
@@ -311,7 +330,8 @@ public class MainScanner {
 										.getAbsolutePath();
 		println("Submitted: " + apkName);
 
-		examinedFiles.add(applicationData.getDecodedPackage().getOriginalApk());
+		examinedFiles.add(applicationData	.getDecodedPackage()
+											.getOriginalApk());
 
 		final Wrapper<Boolean> lockDetected = new Wrapper<Boolean>(false);
 		final Wrapper<AcceptanceStrategy.Result> textDetected = new Wrapper<AcceptanceStrategy.Result>(
@@ -319,7 +339,8 @@ public class MainScanner {
 		final Wrapper<Boolean> encryptionDetected = new Wrapper<Boolean>(false);
 		final Wrapper<Boolean> hasRWPermission = new Wrapper<>(false);
 		final Wrapper<Boolean> deviceAdminUsed = new Wrapper<Boolean>(false);
-		final Wrapper<List<Policy>> deviceAdminPolicies = new Wrapper<List<Policy>>(null);
+		final Wrapper<List<Policy>> deviceAdminPolicies = new Wrapper<List<Policy>>(
+				null);
 		final Wrapper<Double> lockDetectionTime = new Wrapper<Double>(
 				(double) ANALYSIS_TIMEOUT);
 		final Wrapper<Double> textDetectionTime = new Wrapper<Double>(
@@ -353,7 +374,7 @@ public class MainScanner {
 				}
 			});
 		}
-		
+
 		if (!noLock)
 			executor.submit(new Runnable() {
 				@Override
@@ -384,9 +405,11 @@ public class MainScanner {
 							encryptionFlowDetector.setTarget(
 									applicationData.getDecodedPackage());
 							Wrapper<EncryptionResult> encryptionResult = encryptionFlowDetector.detect();
-							
+
 							InfoflowResults infoFlow = encryptionResult.value.getInfoFlowResults();
-							Boolean result = (infoFlow != null && infoFlow.getResults().size() > 0);
+							Boolean result = (infoFlow != null
+									&& infoFlow	.getResults()
+												.size() > 0);
 							if (encryptionDetected != null)
 								encryptionDetected.value = result;
 							if (hasRWPermission != null)
@@ -398,36 +421,37 @@ public class MainScanner {
 						encryptionDetectionTime.value = time;
 				}
 			});
-		
+
 		if (!noDeviceAdminDetection) {
 			executor.submit(new Runnable() {
-				
+
 				@Override
 				public void run() {
 					Double time = Stopwatch.time(new Runnable() {
-						
+
 						@Override
 						public void run() {
-							deviceAdminDetector.setTarget(applicationData.getDecodedPackage());
-							
+							deviceAdminDetector.setTarget(
+									applicationData.getDecodedPackage());
+
 							Wrapper<DeviceAdminResult> deviceAdminResult = deviceAdminDetector.detect();
 							if (deviceAdminResult != null) {
 								if (deviceAdminResult.value != null) {
 									DeviceAdminResult res = deviceAdminResult.value;
-									
+
 									if (deviceAdminPolicies != null)
 										deviceAdminPolicies.value = res.getPolicies();
-									
+
 									if (deviceAdminUsed != null)
 										deviceAdminUsed.value = true;
-									
+
 									// No longer needed
 									deviceAdminResult = null;
 								}
 							}
 						}
 					});
-					
+
 					if (deviceAdminDetectionTime != null)
 						deviceAdminDetectionTime.value = time;
 				}
@@ -445,6 +469,26 @@ public class MainScanner {
 				timedOut = true;
 			}
 		} catch (InterruptedException e) {
+		}
+
+		// Create JSON
+		try {
+			String hash = FileSystem.hashOf(applicationData	.getDecodedPackage()
+															.getOriginalApk());
+			File hashDirectory = new File(
+					MainScanner.jsonDirectory, hash + ".json");
+			OutputStream jsonWriter = new FileOutputStream(hashDirectory);
+			String json = MainScanner.buildResponseFromResults(
+					lockDetected.value,
+					hasRWPermission.value,
+					encryptionDetected.value,
+					deviceAdminUsed.value,
+					deviceAdminPolicies.value,
+					textDetected.value);
+			jsonWriter.write(json.getBytes());
+			jsonWriter.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 
 		try {
@@ -470,7 +514,8 @@ public class MainScanner {
 							encryptionDetectionTime.value,
 							deviceAdminDetectionTime.value,
 							unpackingTime,
-							applicationData.getSmaliLoader().getClassesCount(),
+							applicationData	.getSmaliLoader()
+											.getClassesCount(),
 							applicationData	.getSmaliLoader()
 											.getTotalClassesSize(),
 							applicationData	.getDecodedPackage()
@@ -499,6 +544,35 @@ public class MainScanner {
 
 			println(": " + apkName);
 		}
+	}
+
+	private static String buildResponseFromResults(boolean lockDetected,
+			boolean hasRWPermission, boolean encryptionDetected,
+			boolean deviceAdminUsed, List<Policy> policies,
+			AcceptanceStrategy.Result textResult) {
+		StringBuilder builder = new StringBuilder();
+
+		builder.append("{\n");
+		builder.append(String.format("   lockDetected: %b,\n", lockDetected));
+		builder.append(String.format("   textDetected: %b,\n",
+				textResult.isAccepted()));
+		builder.append(
+				String.format("   textScore: %f,\n", textResult.getScore()));
+		builder.append(
+				String.format("   hasRWPermission: %b,\n", hasRWPermission));
+		builder.append(String.format("   encryptionDetected: %b,\n",
+				encryptionDetected));
+		builder.append(
+				String.format("   deviceAdminUsed: %b,\n", deviceAdminUsed));
+		builder.append(
+				String.format("   deviceAdminPolicies: \"%s\",\n", policies));
+		builder.append(String.format("   textComment: \"%s\",\n",
+				textResult.getComment()));
+		builder.append(String.format("   suspiciousFiles: \"%s\"\n",
+				textResult.getFileClassification()));
+		builder.append("}");
+
+		return builder.toString();
 	}
 
 	private static void closeWriters() throws IOException {
@@ -531,11 +605,10 @@ public class MainScanner {
 		try {
 			String javaBin = System.getProperty("java.home") + File.separator
 					+ "bin" + File.separator + "java";
-			File currentJar = new File(
-					Main.class	.getProtectionDomain()
-								.getCodeSource()
-								.getLocation()
-								.toURI());
+			File currentJar = new File(Main.class	.getProtectionDomain()
+													.getCodeSource()
+													.getLocation()
+													.toURI());
 			List<String> commands = new ArrayList<String>();
 
 			commands.add(javaBin);

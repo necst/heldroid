@@ -1,25 +1,40 @@
 package it.polimi.elet.necst.heldroid.ransomware;
 
-import com.sun.net.httpserver.*;
-import it.polimi.elet.necst.heldroid.pipeline.ApplicationData;
-import it.polimi.elet.necst.heldroid.utils.FileSystem;
-import it.polimi.elet.necst.heldroid.utils.MixedInputStream;
-import soot.jimple.infoflow.Infoflow;
-import soot.jimple.infoflow.results.InfoflowResults;
-import it.polimi.elet.necst.heldroid.ransomware.emulation.TrafficScanner;
-import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
-import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
-import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
-import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import com.sun.net.httpserver.Filter;
+import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+
+import it.polimi.elet.necst.heldroid.pipeline.ApplicationData;
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminDetector;
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult;
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult.Policy;
+import it.polimi.elet.necst.heldroid.ransomware.emulation.TrafficScanner;
+import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
+import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionResult;
+import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
+import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
+import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
+import it.polimi.elet.necst.heldroid.utils.FileSystem;
+import it.polimi.elet.necst.heldroid.utils.MixedInputStream;
+import soot.jimple.infoflow.results.InfoflowResults;
 
 
 public class MainServer implements Runnable {
@@ -29,6 +44,7 @@ public class MainServer implements Runnable {
     private MultiLockingStrategy multiLockingStrategy;
     private MultiResourceScanner multiResourceScanner;
     private EncryptionFlowDetector encryptionFlowDetector;
+    private DeviceAdminDetector deviceAdminDetector;
 
     private TrafficScanner trafficScanner;
 
@@ -62,6 +78,7 @@ public class MainServer implements Runnable {
         this.multiLockingStrategy = Factory.createLockingStrategy();
         this.multiResourceScanner = Factory.createResourceScanner();
         this.encryptionFlowDetector = Factory.createEncryptionFlowDetector();
+        this.deviceAdminDetector = Factory.createDeviceAdminDetector();
         this.trafficScanner = Factory.createTrafficScanner();
     }
 
@@ -111,8 +128,10 @@ public class MainServer implements Runnable {
             return "Error unpacking: " + e.getMessage();
         }
 
-        boolean lockDetected, encryptionDetected;
+        boolean lockDetected, encryptionDetected, deviceAdminUsed;
+        List<Policy> policies;
         AcceptanceStrategy.Result textResult;
+        EncryptionResult encryptionResult;
 
         synchronized (workersLock) {
             multiLockingStrategy.setTarget(applicationData.getDecodedPackage());
@@ -121,26 +140,33 @@ public class MainServer implements Runnable {
 
             lockDetected = multiLockingStrategy.detect();
 //            encryptionDetected = encryptionFlowDetector.detect();
-            InfoflowResults infoFlowResults = encryptionFlowDetector.detect().value.getInfoFlowResults();
+            encryptionResult = encryptionFlowDetector.detect().value;
+            InfoflowResults infoFlowResults = encryptionResult.getInfoFlowResults();
             encryptionDetected = (infoFlowResults != null && infoFlowResults.getResults().size() > 0);
+            DeviceAdminResult deviceAdminResult = deviceAdminDetector.detect().value;
+            deviceAdminUsed = deviceAdminResult.isDeviceAdminUsed();
+            policies = deviceAdminResult.getPolicies();
             textResult = multiResourceScanner.evaluate();
         }
 
         applicationData.dispose();
 
-        return this.buildResponseFromResults(lockDetected, encryptionDetected, textResult);
+        return this.buildResponseFromResults(lockDetected, encryptionResult.isWritable(), encryptionDetected, deviceAdminUsed, policies, textResult);
     }
 
-    private String buildResponseFromResults(boolean lockDetected, boolean encryptionDetected, AcceptanceStrategy.Result textResult) {
+    private String buildResponseFromResults(boolean lockDetected, boolean hasRWPermission, boolean encryptionDetected, boolean deviceAdminUsed, List<Policy> policies, AcceptanceStrategy.Result textResult) {
         StringBuilder builder = new StringBuilder();
-        boolean firstLine;
 
         builder.append("{\n");
         builder.append(String.format("   lockDetected: %b,\n", lockDetected));
-        builder.append(String.format("   encryptionDetected: %b,\n", encryptionDetected));
         builder.append(String.format("   textDetected: %b,\n", textResult.isAccepted()));
         builder.append(String.format("   textScore: %f,\n", textResult.getScore()));
-        builder.append(String.format("   textComment: \"%s\"\n", textResult.getComment()));
+        builder.append(String.format("   hasRWPermission: %b,\n", hasRWPermission));
+        builder.append(String.format("   encryptionDetected: %b,\n", encryptionDetected));
+        builder.append(String.format("   deviceAdminUsed: %b,\n", deviceAdminUsed));
+        builder.append(String.format("   deviceAdminPolicies: \"%s\",\n", policies));
+        builder.append(String.format("   textComment: \"%s\",\n", textResult.getComment()));
+        builder.append(String.format("   suspiciousFiles: \"%s\"\n", textResult.getFileClassification()));
         builder.append("}");
 
         return builder.toString();
