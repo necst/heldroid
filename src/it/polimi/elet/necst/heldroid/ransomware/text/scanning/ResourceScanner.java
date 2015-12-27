@@ -1,28 +1,23 @@
 package it.polimi.elet.necst.heldroid.ransomware.text.scanning;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.cybozu.labs.langdetect.Detector;
 import com.cybozu.labs.langdetect.DetectorFactory;
 import com.cybozu.labs.langdetect.LangDetectException;
-import com.sun.org.apache.xerces.internal.impl.xpath.regex.Match;
 
 import it.polimi.elet.necst.heldroid.ransomware.text.FileClassification;
 import it.polimi.elet.necst.heldroid.ransomware.text.SupportedLanguage;
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassification;
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifier;
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifierCollection;
-
-import java.io.File;
-import java.io.FilenameFilter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public abstract class ResourceScanner {
 	private static final Pattern RES_VALUE_PATTERN = Pattern.compile(
@@ -165,6 +160,10 @@ public abstract class ResourceScanner {
 		this.encounteredLanguages.add(language.getName());
 
 		return textClassifierCollection.get(language);
+	}
+	
+	public Set<String> getEncounteredLanguages() {
+		return encounteredLanguages;
 	}
 
 	public String getScanReport() {

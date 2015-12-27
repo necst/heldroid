@@ -12,6 +12,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminDetector;
 import it.polimi.elet.necst.heldroid.ransomware.emulation.TrafficScanner;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
+import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.ransomware.locking.AdminLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.locking.DialogLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.locking.DrawOverLockingStrategy;
@@ -65,6 +66,13 @@ public class Factory {
         return allLockingStratgies;
     }
 
+    public static ImageScanner createImageScanner() {
+    	TextClassifierCollection textClassifierCollection = createClassifierCollection();
+    	ImageScanner imageScanner = new ImageScanner(textClassifierCollection);
+    	
+    	imageScanner.setAcceptanceStrategy(createAcceptanceStrategy());
+    	return imageScanner;
+    }
 
     public static MultiResourceScanner createResourceScanner() throws ParserConfigurationException {
         TextClassifierCollection textClassifierCollection = createClassifierCollection();
@@ -73,6 +81,7 @@ public class Factory {
         multiResourceScanner.add(new XmlLayoutScanner(textClassifierCollection));
         multiResourceScanner.add(new XmlValuesScanner(textClassifierCollection));
         multiResourceScanner.add(new HtmlScanner(textClassifierCollection));
+        multiResourceScanner.add(new ImageScanner(textClassifierCollection));
         multiResourceScanner.setAcceptanceStrategy(createAcceptanceStrategy());
 
         return multiResourceScanner;

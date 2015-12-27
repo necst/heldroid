@@ -108,7 +108,7 @@ public class EncryptionFlowDetector {
 
 //        final Wrapper<InfoflowResults> res = new Wrapper<InfoflowResults>(null);
 
-        Logging.suppressAll();
+//        Logging.suppressAll();
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -134,7 +134,7 @@ public class EncryptionFlowDetector {
                 executor.shutdownNow();
         } catch (InterruptedException e) { }
 
-        Logging.restoreAll();
+//        Logging.restoreAll();
 
 //        boolean result = (res.value != null) && (res.value.getResults().size() > 0);
         return result;
@@ -150,7 +150,7 @@ public class EncryptionFlowDetector {
         app.setAccessPathLength(5);
         app.setLayoutMatchingMode(AndroidSourceSinkManager.LayoutMatchingMode.MatchSensitiveOnly);
         app.setFlowSensitiveAliasing(true);
-        app.setPathBuilder(DefaultPathBuilderFactory.PathBuilder.ContextInsensitiveSourceFinder);
+        app.setPathBuilder(DefaultPathBuilderFactory.PathBuilder.ContextSensitive);
         app.setComputeResultPaths(true);
 
         EasyTaintWrapper easyTaintWrapper = null;

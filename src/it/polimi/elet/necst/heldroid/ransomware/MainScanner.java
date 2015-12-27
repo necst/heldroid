@@ -26,7 +26,6 @@ import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult.Policy;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionResult;
-import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
@@ -58,13 +57,11 @@ public class MainScanner {
 		noEncryption = options.contains("-ne");
 		noTextDetection = options.contains("-nt");
 		noDeviceAdminDetection = options.contains("-na");
-		noImageAnalysis = options.contains("-ni");
 
 		multiLockingStrategy = Factory.createLockingStrategy();
 		multiResourceScanner = Factory.createResourceScanner();
 		encryptionFlowDetector = Factory.createEncryptionFlowDetector();
 		deviceAdminDetector = Factory.createDeviceAdminDetector();
-		imageScanner = Factory.createImageScanner();
 
 		examinedFiles = new PersistentFileList(
 				Globals.EXAMINED_FILES_LIST_FILE);
@@ -389,36 +386,6 @@ public class MainScanner {
 			});
 		}
 
-		if (!noImageAnalysis) {
-			executor.submit(new Runnable() {
-				@Override
-				public void run() {
-					Double time = Stopwatch.time(new Runnable() {
-						@Override
-						public void run() {
-							imageScanner.setUnpackedApkDirectory(
-									applicationData	.getDecodedPackage()
-													.getDecodedDirectory());
-							
-							AcceptanceStrategy.Result result = imageScanner.evaluate();
-							
-							if (languages != null) {
-								languages.value = imageScanner.getEncounteredLanguages();
-							}
-							
-							if (textDetected != null) {
-								textDetected.value = result;
-							}
-						}
-					});
-
-					if (imageAnalysisTime != null) {
-						imageAnalysisTime.value = time;
-					}
-				};
-			});
-		}
-
 		if (!noLock)
 			executor.submit(new Runnable() {
 				@Override
@@ -715,7 +682,6 @@ public class MainScanner {
 	private static Boolean noEncryption = false;
 	private static Boolean noTextDetection = false;
 	private static Boolean noDeviceAdminDetection = false;
-	private static Boolean noImageAnalysis = false;
 
 	private static PersistentFileList examinedFiles;
 	private static BufferedWriter resultsWriter;
@@ -723,7 +689,6 @@ public class MainScanner {
 
 	private static MultiLockingStrategy multiLockingStrategy;
 	private static MultiResourceScanner multiResourceScanner;
-	private static ImageScanner imageScanner;
 	private static EncryptionFlowDetector encryptionFlowDetector;
 	private static DeviceAdminDetector deviceAdminDetector;
 
