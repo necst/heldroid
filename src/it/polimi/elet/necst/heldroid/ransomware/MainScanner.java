@@ -8,8 +8,12 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +26,7 @@ import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult.Policy;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionResult;
+import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
@@ -53,11 +58,13 @@ public class MainScanner {
 		noEncryption = options.contains("-ne");
 		noTextDetection = options.contains("-nt");
 		noDeviceAdminDetection = options.contains("-na");
+		noImageAnalysis = options.contains("-ni");
 
 		multiLockingStrategy = Factory.createLockingStrategy();
 		multiResourceScanner = Factory.createResourceScanner();
 		encryptionFlowDetector = Factory.createEncryptionFlowDetector();
 		deviceAdminDetector = Factory.createDeviceAdminDetector();
+		imageScanner = Factory.createImageScanner();
 
 		examinedFiles = new PersistentFileList(
 				Globals.EXAMINED_FILES_LIST_FILE);
@@ -67,7 +74,7 @@ public class MainScanner {
 		else {
 			resultsWriter = new BufferedWriter(new FileWriter(result));
 			resultsWriter.write(
-					"Sample; LockDetected; TextDetected; TextScore; RW Permission; EncryptionDetected; DeviceAdminUsed; DeviceAdminPolicies; Comment; TimedOut; Classified files");
+					"Sample; LockDetected; TextDetected; TextScore; Languages; RW Permission; EncryptionDetected; DeviceAdminUsed; DeviceAdminPolicies; Comment; TimedOut; Classified files");
 			resultsWriter.newLine();
 		}
 
@@ -339,6 +346,7 @@ public class MainScanner {
 		final Wrapper<Boolean> encryptionDetected = new Wrapper<Boolean>(false);
 		final Wrapper<Boolean> hasRWPermission = new Wrapper<>(false);
 		final Wrapper<Boolean> deviceAdminUsed = new Wrapper<Boolean>(false);
+		final Wrapper<Set<String>> languages = new Wrapper<Set<String>>(null);
 		final Wrapper<List<Policy>> deviceAdminPolicies = new Wrapper<List<Policy>>(
 				null);
 		final Wrapper<Double> lockDetectionTime = new Wrapper<Double>(
@@ -348,6 +356,8 @@ public class MainScanner {
 		final Wrapper<Double> encryptionDetectionTime = new Wrapper<Double>(
 				(double) ANALYSIS_TIMEOUT);
 		final Wrapper<Double> deviceAdminDetectionTime = new Wrapper<Double>(
+				(double) ANALYSIS_TIMEOUT);
+		final Wrapper<Double> imageAnalysisTime = new Wrapper<Double>(
 				(double) ANALYSIS_TIMEOUT);
 
 		ExecutorService executor = Executors.newFixedThreadPool(3);
@@ -364,6 +374,10 @@ public class MainScanner {
 													.getDecodedDirectory());
 							AcceptanceStrategy.Result result = multiResourceScanner.evaluate();
 
+							if (languages != null) {
+								languages.value = multiResourceScanner.getEncounteredLanguages();
+							}
+
 							if (textDetected != null)
 								textDetected.value = result;
 						}
@@ -372,6 +386,36 @@ public class MainScanner {
 					if (textDetectionTime != null)
 						textDetectionTime.value = time;
 				}
+			});
+		}
+
+		if (!noImageAnalysis) {
+			executor.submit(new Runnable() {
+				@Override
+				public void run() {
+					Double time = Stopwatch.time(new Runnable() {
+						@Override
+						public void run() {
+							imageScanner.setUnpackedApkDirectory(
+									applicationData	.getDecodedPackage()
+													.getDecodedDirectory());
+							
+							AcceptanceStrategy.Result result = imageScanner.evaluate();
+							
+							if (languages != null) {
+								languages.value = imageScanner.getEncounteredLanguages();
+							}
+							
+							if (textDetected != null) {
+								textDetected.value = result;
+							}
+						}
+					});
+
+					if (imageAnalysisTime != null) {
+						imageAnalysisTime.value = time;
+					}
+				};
 			});
 		}
 
@@ -410,6 +454,8 @@ public class MainScanner {
 							Boolean result = (infoFlow != null
 									&& infoFlow	.getResults()
 												.size() > 0);
+
+							infoFlow.printResults();
 							if (encryptionDetected != null)
 								encryptionDetected.value = result;
 							if (hasRWPermission != null)
@@ -469,14 +515,15 @@ public class MainScanner {
 				timedOut = true;
 			}
 		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 
 		// Create JSON
 		try {
 			String hash = FileSystem.hashOf(applicationData	.getDecodedPackage()
 															.getOriginalApk());
-			File hashDirectory = new File(
-					MainScanner.jsonDirectory, hash + ".json");
+			File hashDirectory = new File(MainScanner.jsonDirectory,
+					hash + ".json");
 			OutputStream jsonWriter = new FileOutputStream(hashDirectory);
 			String json = MainScanner.buildResponseFromResults(
 					lockDetected.value,
@@ -484,7 +531,8 @@ public class MainScanner {
 					encryptionDetected.value,
 					deviceAdminUsed.value,
 					deviceAdminPolicies.value,
-					textDetected.value);
+					textDetected.value,
+					languages.value);
 			jsonWriter.write(json.getBytes());
 			jsonWriter.close();
 		} catch (IOException e) {
@@ -493,11 +541,12 @@ public class MainScanner {
 
 		try {
 			resultsWriter.write(String.format(
-					"%s; %b; %b; %f; %b; %b; %b; %s; \"%s\"; %b; %s\n",
+					"%s; %b; %b; %f; %s; %b; %b; %b; %s; \"%s\"; %b; %s\n",
 					apkName,
 					lockDetected.value,
 					textDetected.value.isAccepted(),
 					textDetected.value.getScore(),
+					languages.value,
 					hasRWPermission.value,
 					encryptionDetected.value,
 					deviceAdminUsed.value,
@@ -549,26 +598,38 @@ public class MainScanner {
 	private static String buildResponseFromResults(boolean lockDetected,
 			boolean hasRWPermission, boolean encryptionDetected,
 			boolean deviceAdminUsed, List<Policy> policies,
-			AcceptanceStrategy.Result textResult) {
+			AcceptanceStrategy.Result textResult, Set<String> languages) {
 		StringBuilder builder = new StringBuilder();
+		
+		/*
+		 * By default the decimal separator is a comma. This is wrong in JSON, since it
+		 * expects a dot, so we need to use a DecimalFormat object.
+		 */
+		
+		DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
+		symbols.setDecimalSeparator('.');
+		
+		DecimalFormat formatter = new DecimalFormat();
+		formatter.setDecimalFormatSymbols(symbols);
 
 		builder.append("{\n");
-		builder.append(String.format("   lockDetected: %b,\n", lockDetected));
-		builder.append(String.format("   textDetected: %b,\n",
+		builder.append(String.format("   \"lockDetected\": %b,\n", lockDetected));
+		builder.append(String.format("   \"textDetected\": %b,\n",
 				textResult.isAccepted()));
 		builder.append(
-				String.format("   textScore: %f,\n", textResult.getScore()));
+				String.format("   \"textScore\": %s,\n", formatter.format(textResult.getScore())));
+		builder.append(String.format("   \"languages\": \"%s\",\n", languages));
 		builder.append(
-				String.format("   hasRWPermission: %b,\n", hasRWPermission));
-		builder.append(String.format("   encryptionDetected: %b,\n",
+				String.format("   \"hasRWPermission\": %b,\n", hasRWPermission));
+		builder.append(String.format("   \"encryptionDetected\": %b,\n",
 				encryptionDetected));
 		builder.append(
-				String.format("   deviceAdminUsed: %b,\n", deviceAdminUsed));
+				String.format("   \"deviceAdminUsed\": %b,\n", deviceAdminUsed));
 		builder.append(
-				String.format("   deviceAdminPolicies: \"%s\",\n", policies));
-		builder.append(String.format("   textComment: \"%s\",\n",
+				String.format("   \"deviceAdminPolicies\": \"%s\",\n", policies));
+		builder.append(String.format("   \"textComment\": \"%s\",\n",
 				textResult.getComment()));
-		builder.append(String.format("   suspiciousFiles: \"%s\"\n",
+		builder.append(String.format("   \"suspiciousFiles\": \"%s\"\n",
 				textResult.getFileClassification()));
 		builder.append("}");
 
@@ -654,6 +715,7 @@ public class MainScanner {
 	private static Boolean noEncryption = false;
 	private static Boolean noTextDetection = false;
 	private static Boolean noDeviceAdminDetection = false;
+	private static Boolean noImageAnalysis = false;
 
 	private static PersistentFileList examinedFiles;
 	private static BufferedWriter resultsWriter;
@@ -661,6 +723,7 @@ public class MainScanner {
 
 	private static MultiLockingStrategy multiLockingStrategy;
 	private static MultiResourceScanner multiResourceScanner;
+	private static ImageScanner imageScanner;
 	private static EncryptionFlowDetector encryptionFlowDetector;
 	private static DeviceAdminDetector deviceAdminDetector;
 
