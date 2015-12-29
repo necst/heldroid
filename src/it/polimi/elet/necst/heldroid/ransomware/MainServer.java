@@ -123,10 +123,11 @@ public class MainServer implements Runnable {
 				new HashHandler());
 		context	.getFilters()
 				.add(new ParameterFilter());
-		
+
 		context = server.createContext("/fetch-apk", new ApkHandler());
-		context.getFilters().add(new ParameterFilter());
-		
+		context	.getFilters()
+				.add(new ParameterFilter());
+
 		// Handle APK downloads
 
 		server.setExecutor(Executors.newFixedThreadPool(MAX_THREADS_COUNT)); // creates
@@ -456,19 +457,20 @@ public class MainServer implements Runnable {
 			this.respond(t, 200, response);
 		}
 	}
-	
+
 	private class ApkHandler extends BaseHandler implements HttpHandler {
-		
+
 		private final File baseFolder;
-		
+
 		public ApkHandler() {
 			baseFolder = new File("/home/andronio/experiments/Automator");
 		}
-		
+
 		@Override
 		public void handle(HttpExchange exchange) throws IOException {
-			Map<String, String> params = (Map<String, String>) exchange.getAttribute("parameters");
-			
+			Map<String, String> params = (Map<String, String>) exchange.getAttribute(
+					"parameters");
+
 			String family = params.get("family");
 			String hash = params.get("hash");
 
@@ -476,25 +478,48 @@ public class MainServer implements Runnable {
 				respond(exchange, 400, "No hash or family provided");
 				return;
 			}
-			
-			File familyFolder = new File(baseFolder, family);
-			File apk = new File(familyFolder, hash+".apk");
-			
+
+			File familyFolder = new File(baseFolder, family).getCanonicalFile();
+
+			if (!familyFolder.exists()) {
+				respond(exchange, 404, "Family not found");
+			}
+
+			if (!familyFolder	.getParentFile()
+								.equals(baseFolder.getCanonicalFile())) {
+				respond(exchange, 400, "Bad family");
+				return;
+			}
+
+			File apk = new File(familyFolder, hash + ".apk").getCanonicalFile();
+
+			if (!apk.getParentFile()
+					.equals(familyFolder.getCanonicalFile())) {
+				respond(exchange, 400, "Bad file");
+				return;
+			}
+
 			if (!apk.exists()) {
 				respond(exchange, 404, "Apk not found");
 				return;
 			}
-			
+
+			// Set output file name
+			Headers responseHeaders = exchange.getResponseHeaders();
+			responseHeaders.add("Content-Disposition",
+					"attachment; filename=\"" + hash + ".apk\"");
+
+			// Start sending file
 			exchange.sendResponseHeaders(200, apk.length());
 			OutputStream os = exchange.getResponseBody();
 			FileInputStream fis = new FileInputStream(apk);
-			
-			byte[] buffer = new byte[8*1024]; // 8KB buffer
+
+			byte[] buffer = new byte[8 * 1024]; // 8KB buffer
 			int read = 0;
 			while ((read = fis.read(buffer)) > -1) {
 				os.write(buffer, 0, read);
 			}
-			
+
 			fis.close();
 			os.close();
 		}
