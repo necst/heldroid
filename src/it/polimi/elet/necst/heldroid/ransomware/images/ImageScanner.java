@@ -20,6 +20,7 @@ import org.languagetool.rules.Rule;
 import org.languagetool.rules.spelling.SpellingCheckRule;
 import org.languagetool.tools.Tools;
 
+import it.polimi.elet.necst.heldroid.ransomware.text.FileClassification;
 import it.polimi.elet.necst.heldroid.ransomware.text.SupportedLanguage;
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassification;
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifier;
@@ -83,16 +84,18 @@ public class ImageScanner extends ResourceScanner {
 
 	private TextClassification findRansomwareText(File image) {
 		try {
-			image = convertToGrayscale(image);
+			File imageBW = convertToGrayscale(image);
 
-			String extracted = extractText(image);
+			String extracted = extractText(imageBW);
+
+			// Remove unnecessary file
+			imageBW.delete();
 
 			if (extracted != null) {
 				TextClassification result = this.classifyElementText(extracted,
 						TextClassification.empty());
+				extractLikelihood(image, result);
 				result.setFileClassification(getFileClassification());
-				// Remove unnecessary file
-				image.delete();
 				return result;
 			}
 		} catch (IOException e) {
