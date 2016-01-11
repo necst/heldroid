@@ -1,12 +1,15 @@
 package it.polimi.elet.necst.heldroid.ransomware.text.scanning;
 
-import it.polimi.elet.necst.heldroid.ransomware.text.FileClassification;
-import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassification;
-import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifierCollection;
-
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import it.polimi.elet.necst.heldroid.ransomware.text.FileClassification;
+import it.polimi.elet.necst.heldroid.ransomware.text.SupportedLanguage;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassification;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifierCollection;
 
 public class MultiResourceScanner extends ResourceScanner {
     private List<ResourceScanner> internalScanners;
@@ -26,12 +29,12 @@ public class MultiResourceScanner extends ResourceScanner {
             AcceptanceStrategy.Result result = scanner.evaluate();
             finalClassification.append(scanner.textClassification);
             
-            // merge results
+            // Merge results
             finalFileClassification.merge(result.getFileClassification());
-            // Add all encountered languages
-            this.getEncounteredLanguages().addAll(scanner.getEncounteredLanguages());
+
+            // Add to this scanner all languages encountered by the internal scanner
+            this.getEncounteredLanguagesRaw().addAll(scanner.getEncounteredLanguagesRaw());
         }
-        
         
         finalClassification.setFileClassification(finalFileClassification);
         return finalClassification;

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -25,6 +26,7 @@ import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult.Policy;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionResult;
+import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
@@ -57,6 +59,7 @@ public class MainScannerSequential {
 
 		multiLockingStrategy = Factory.createLockingStrategy();
 		multiResourceScanner = Factory.createResourceScanner();
+		imageScanner = Factory.createImageScanner();
 		encryptionFlowDetector = Factory.createEncryptionFlowDetector();
 		deviceAdminDetector = Factory.createDeviceAdminDetector();
 
@@ -250,14 +253,48 @@ public class MainScannerSequential {
 							multiResourceScanner.setUnpackedApkDirectory(
 									applicationData	.getDecodedPackage()
 													.getDecodedDirectory());
-							AcceptanceStrategy.Result result = multiResourceScanner.evaluate();
-							
-							if (languages != null) {
-								languages.value = multiResourceScanner.getEncounteredLanguages();
+							AcceptanceStrategy.Result textResult = multiResourceScanner.evaluate();
+							AcceptanceStrategy.Result imageResult = null;
+							boolean resultFromImages = false;
+
+							/*
+							 * Analyze images only if no text is found yet
+							 */
+							if (!textResult.isAccepted()) {
+								if (imageScanner == null) {
+									imageScanner = Factory.createImageScanner();
+								}
+								imageScanner.setUnpackedApkDirectory(
+										applicationData	.getDecodedPackage()
+														.getDecodedDirectory());
+								imageScanner.setTesseractLanguage(
+										multiResourceScanner.getEncounteredLanguagesRaw());
+								imageResult = imageScanner.evaluate();
 							}
-							
+
+							if (imageResult != null) {
+								resultFromImages = imageResult.getScore() > textResult.getScore();
+							}
+
+							if (languages != null) {
+								if (languages.value == null) {
+									languages.value = new HashSet<>();
+								}
+
+								// Add languages depending on who did the
+								// analysis
+								if (resultFromImages) {
+									languages.value.addAll(
+											imageScanner.getEncounteredLanguages());
+								} else {
+									languages.value.addAll(
+											multiResourceScanner.getEncounteredLanguages());
+								}
+							}
+
 							if (textDetected != null)
-								textDetected.value = result;
+								textDetected.value = resultFromImages
+										? imageResult : textResult;
 						}
 					});
 
@@ -442,33 +479,35 @@ public class MainScannerSequential {
 			boolean deviceAdminUsed, List<Policy> policies,
 			AcceptanceStrategy.Result textResult, Set<String> languages) {
 		StringBuilder builder = new StringBuilder();
-		
+
 		/*
-		 * By default the decimal separator is a comma. This is wrong in JSON, since it
-		 * expects a dot, so we need to use a DecimalFormat object.
+		 * By default the decimal separator is a comma. This is wrong in JSON,
+		 * since it expects a dot, so we need to use a DecimalFormat object.
 		 */
-		
-		DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
+
+		DecimalFormatSymbols symbols = new DecimalFormatSymbols(
+				Locale.getDefault());
 		symbols.setDecimalSeparator('.');
-		
+
 		DecimalFormat formatter = new DecimalFormat();
 		formatter.setDecimalFormatSymbols(symbols);
 
 		builder.append("{\n");
-		builder.append(String.format("   \"lockDetected\": %b,\n", lockDetected));
+		builder.append(
+				String.format("   \"lockDetected\": %b,\n", lockDetected));
 		builder.append(String.format("   \"textDetected\": %b,\n",
 				textResult.isAccepted()));
-		builder.append(
-				String.format("   \"textScore\": %s,\n", formatter.format(textResult.getScore())));
+		builder.append(String.format("   \"textScore\": %s,\n",
+				formatter.format(textResult.getScore())));
 		builder.append(String.format("   \"languages\": \"%s\",\n", languages));
-		builder.append(
-				String.format("   \"hasRWPermission\": %b,\n", hasRWPermission));
+		builder.append(String.format("   \"hasRWPermission\": %b,\n",
+				hasRWPermission));
 		builder.append(String.format("   \"encryptionDetected\": %b,\n",
 				encryptionDetected));
-		builder.append(
-				String.format("   \"deviceAdminUsed\": %b,\n", deviceAdminUsed));
-		builder.append(
-				String.format("   \"deviceAdminPolicies\": \"%s\",\n", policies));
+		builder.append(String.format("   \"deviceAdminUsed\": %b,\n",
+				deviceAdminUsed));
+		builder.append(String.format("   \"deviceAdminPolicies\": \"%s\",\n",
+				policies));
 		builder.append(String.format("   \"textComment\": \"%s\",\n",
 				textResult.getComment()));
 		builder.append(String.format("   \"suspiciousFiles\": \"%s\"\n",
@@ -477,7 +516,7 @@ public class MainScannerSequential {
 
 		return builder.toString();
 	}
-	
+
 	private static void closeWriters() throws IOException {
 		resultsWriter.close();
 		performancesWriter.close();
@@ -498,6 +537,7 @@ public class MainScannerSequential {
 
 	private static MultiLockingStrategy multiLockingStrategy;
 	private static MultiResourceScanner multiResourceScanner;
+	private static ImageScanner imageScanner;
 	private static EncryptionFlowDetector encryptionFlowDetector;
 	private static DeviceAdminDetector deviceAdminDetector;
 }

@@ -81,7 +81,6 @@ public class Factory {
         multiResourceScanner.add(new XmlLayoutScanner(textClassifierCollection));
         multiResourceScanner.add(new XmlValuesScanner(textClassifierCollection));
         multiResourceScanner.add(new HtmlScanner(textClassifierCollection));
-        multiResourceScanner.add(new ImageScanner(textClassifierCollection));
         multiResourceScanner.setAcceptanceStrategy(createAcceptanceStrategy());
 
         return multiResourceScanner;

@@ -34,6 +34,7 @@ import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult.P
 import it.polimi.elet.necst.heldroid.ransomware.emulation.TrafficScanner;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionResult;
+import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
@@ -47,6 +48,7 @@ public class MainServer implements Runnable {
 	private Object workersLock = new Object();
 	private MultiLockingStrategy multiLockingStrategy;
 	private MultiResourceScanner multiResourceScanner;
+	private ImageScanner imageScanner;
 	private EncryptionFlowDetector encryptionFlowDetector;
 	private DeviceAdminDetector deviceAdminDetector;
 
@@ -83,6 +85,7 @@ public class MainServer implements Runnable {
 
 		this.multiLockingStrategy = Factory.createLockingStrategy();
 		this.multiResourceScanner = Factory.createResourceScanner();
+		this.imageScanner = Factory.createImageScanner();
 		this.encryptionFlowDetector = Factory.createEncryptionFlowDetector();
 		this.deviceAdminDetector = Factory.createDeviceAdminDetector();
 		this.trafficScanner = Factory.createTrafficScanner();
@@ -170,13 +173,42 @@ public class MainServer implements Runnable {
 			DeviceAdminResult deviceAdminResult = deviceAdminDetector.detect().value;
 			deviceAdminUsed = deviceAdminResult.isDeviceAdminUsed();
 			policies = deviceAdminResult.getPolicies();
-			textResult = multiResourceScanner.evaluate();
-			languages = multiResourceScanner.getEncounteredLanguages();
+
+			AcceptanceStrategy.Result textScannerResult = multiResourceScanner.evaluate();
+			AcceptanceStrategy.Result imageScannerResult = null;
+
+			boolean resultFromImages = false;
+			/*
+			 * Analyze images only if no text is found yet
+			 */
+			if (!textScannerResult.isAccepted()) {
+				if (imageScanner == null) {
+					imageScanner = Factory.createImageScanner();
+				}
+				imageScanner.setUnpackedApkDirectory(
+						applicationData	.getDecodedPackage()
+										.getDecodedDirectory());
+				imageScanner.setTesseractLanguage(
+						multiResourceScanner.getEncounteredLanguagesRaw());
+				imageScannerResult = imageScanner.evaluate();
+			}
+			
+			if (imageScannerResult != null) {
+				resultFromImages = imageScannerResult.getScore() > textScannerResult.getScore();
+			}
+
+			if (resultFromImages) {
+				textResult = imageScannerResult;
+				languages = imageScanner.getEncounteredLanguages();
+			} else {
+				textResult = textScannerResult;
+				languages = multiResourceScanner.getEncounteredLanguages();
+			}
 		}
 
 		applicationData.dispose();
 
-		return this.buildResponseFromResults(lockDetected,
+		return MainServer.buildResponseFromResults(lockDetected,
 				encryptionResult.isWritable(),
 				encryptionDetected,
 				deviceAdminUsed,
@@ -340,9 +372,11 @@ public class MainServer implements Runnable {
 			String mimeType = line.split(":")[1].trim();
 
 			// If it is not an octect stream, fails
-			if (!mimeType.equals(OCTET_STREAM_MIME_TYPE))
+			if (!mimeType.equals(OCTET_STREAM_MIME_TYPE)) {
+				requestStream.close();
 				throw new RuntimeException(
 						"Invalid MIME type: expected application/octet-stream!");
+			}
 
 			OutputStream outputStream = new FileOutputStream(resultFile);
 
@@ -600,7 +634,6 @@ public class MainServer implements Runnable {
 			exchange.setAttribute("parameters", parameters);
 		}
 
-		@SuppressWarnings("unchecked")
 		private void parseQuery(String query, Map<String, String> parameters)
 				throws UnsupportedEncodingException {
 			if (query == null)

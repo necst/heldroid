@@ -31,7 +31,7 @@ public abstract class ResourceScanner {
 
 	protected FileClassification fileClassification = new FileClassification();
 
-	private Set<String> encounteredLanguages;
+	private Set<SupportedLanguage> encounteredLanguages;
 	private int totalSentences;
 
 	protected File getApkResourceDirectory() {
@@ -45,7 +45,8 @@ public abstract class ResourceScanner {
 		File[] matchedFiles = res.listFiles(new FilenameFilter() {
 			@Override
 			public boolean accept(File dir, String name) {
-				return name.toLowerCase().startsWith(prefix.toLowerCase());
+				return name	.toLowerCase()
+							.startsWith(prefix.toLowerCase());
 			}
 		});
 
@@ -99,9 +100,11 @@ public abstract class ResourceScanner {
 		String fullPath = file.getAbsolutePath();
 
 		// use relative path, if possible
-		Matcher matcher = Pattern.compile(".*\\.apk\\/(.+)").matcher(fullPath);
+		Matcher matcher = Pattern	.compile(".*\\.apk\\/(.+)")
+									.matcher(fullPath);
 
-		this.extractLikelihood(matcher.matches() ? matcher.group(1) : fullPath, classification);
+		this.extractLikelihood(matcher.matches() ? matcher.group(1) : fullPath,
+				classification);
 	}
 
 	public ResourceScanner(TextClassifierCollection textClassifierCollection) {
@@ -126,7 +129,7 @@ public abstract class ResourceScanner {
 	protected abstract TextClassification findRansomwareText();
 
 	private void resetStatistics() {
-		this.encounteredLanguages = new HashSet<String>();
+		this.encounteredLanguages = new HashSet<>();
 		this.totalSentences = 0;
 	}
 
@@ -157,21 +160,37 @@ public abstract class ResourceScanner {
 			return null;
 
 		this.totalSentences++;
-		this.encounteredLanguages.add(language.getName());
+		this.encounteredLanguages.add(language);
 
 		return textClassifierCollection.get(language);
 	}
-	
+
+	/**
+	 * Returns all the languages encountered by this scanner. Note that this
+	 * result is built from {@link ResourceScanner#getEncounteredLanguagesRaw()}
+	 * , so if you modify the set returned by this method, the modifications
+	 * will not be applied to the scanner.
+	 * 
+	 * @return
+	 */
 	public Set<String> getEncounteredLanguages() {
-		return encounteredLanguages;
+		Set<String> result = new HashSet<>();
+		for (SupportedLanguage lang : encounteredLanguages) {
+			result.add(lang.getName());
+		}
+		return result;
+	}
+
+	public Set<SupportedLanguage> getEncounteredLanguagesRaw() {
+		return this.encounteredLanguages;
 	}
 
 	public String getScanReport() {
 		StringBuilder builder = new StringBuilder();
-
-		if (this.encounteredLanguages.size() > 0) {
+		Set<String> encounteredLanguages = this.getEncounteredLanguages();
+		if (encounteredLanguages.size() > 0) {
 			builder.append("Languages: ");
-			for (String lang : this.encounteredLanguages)
+			for (String lang : encounteredLanguages)
 				builder.append(lang.toUpperCase() + ", ");
 		}
 

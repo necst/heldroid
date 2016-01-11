@@ -7,8 +7,10 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.text.Normalizer;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 
@@ -33,6 +35,9 @@ public class ImageScanner extends ResourceScanner {
 
 	// Min number of characters that text must contain to be analysed
 	private static final int MIN_TEXT_LENGTH = 15;
+	private static final String TESSERACT_DEFAULT_LANG = "eng+rus";
+	
+	private String tesseractLanguage = TESSERACT_DEFAULT_LANG;
 
 	public ImageScanner(TextClassifierCollection textClassifierCollection) {
 		super(textClassifierCollection);
@@ -195,10 +200,43 @@ public class ImageScanner extends ResourceScanner {
 		return null;
 	}
 
+	/**
+	 * Instructs Tesseract to recognize character based on the specified
+	 * language(s). If {@code hint} is {@code null}, a default language of
+	 * "eng+rus" will be used.
+	 * 
+	 * @param hint The languages Tesseract should use.
+	 */
+	public void setTesseractLanguage(Set<SupportedLanguage> hint) {
+		if (hint == null || hint.size() == 0) {
+			// This will set the default value for tesseract
+			this.tesseractLanguage = TESSERACT_DEFAULT_LANG;
+			return;
+		}
+
+		Iterator<SupportedLanguage> iterator = hint.iterator();
+
+		// Join all hints with a "plus" sign
+		StringBuilder builder = new StringBuilder();
+		while (iterator.hasNext()) {
+			builder.append(iterator	.next()
+									.getIso3code());
+			builder.append('+');
+		}
+		// Remove trailing "plus"
+		builder.setLength(builder.length() - 1);
+
+		this.tesseractLanguage = builder.toString();
+	}
+
 	private String tesseract(File image) {
 		Tesseract instance = Tesseract.getInstance();
 		instance.setDatapath("/usr/local/share/tessdata/");
-		instance.setLanguage("eng+rus");
+
+		if (tesseractLanguage == null) {
+			tesseractLanguage = TESSERACT_DEFAULT_LANG;
+		}
+		instance.setLanguage(tesseractLanguage);
 
 		// Ignore the following chars: | (pipe), \ (backslash)
 		instance.setTessVariable("tessedit_char_blacklist", "|\\");
