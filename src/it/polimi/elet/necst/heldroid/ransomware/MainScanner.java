@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -372,7 +373,10 @@ public class MainScanner {
 							AcceptanceStrategy.Result result = multiResourceScanner.evaluate();
 
 							if (languages != null) {
-								languages.value = multiResourceScanner.getEncounteredLanguages();
+								if (languages.value == null) {
+									languages.value = new HashSet<>();
+								}
+								languages.value.addAll(multiResourceScanner.getEncounteredLanguages());
 							}
 
 							if (textDetected != null)

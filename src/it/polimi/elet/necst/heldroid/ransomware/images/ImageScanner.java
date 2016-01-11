@@ -20,7 +20,6 @@ import org.languagetool.rules.Rule;
 import org.languagetool.rules.spelling.SpellingCheckRule;
 import org.languagetool.tools.Tools;
 
-import it.polimi.elet.necst.heldroid.ransomware.text.FileClassification;
 import it.polimi.elet.necst.heldroid.ransomware.text.SupportedLanguage;
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassification;
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifier;

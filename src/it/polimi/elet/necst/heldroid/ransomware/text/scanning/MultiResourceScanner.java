@@ -28,6 +28,8 @@ public class MultiResourceScanner extends ResourceScanner {
             
             // merge results
             finalFileClassification.merge(result.getFileClassification());
+            // Add all encountered languages
+            this.getEncounteredLanguages().addAll(scanner.getEncounteredLanguages());
         }
         
         
