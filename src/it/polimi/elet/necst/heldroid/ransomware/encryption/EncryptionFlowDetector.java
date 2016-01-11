@@ -1,23 +1,6 @@
 package it.polimi.elet.necst.heldroid.ransomware.encryption;
 
 
-import it.polimi.elet.necst.heldroid.utils.Wrapper;
-import it.polimi.elet.necst.heldroid.utils.Xml;
-import it.polimi.elet.necst.heldroid.apk.DecodedPackage;
-import it.polimi.elet.necst.heldroid.utils.Logging;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import soot.jimple.infoflow.android.AndroidSourceSinkManager;
-import soot.jimple.infoflow.android.SetupApplication;
-import soot.jimple.infoflow.data.pathBuilders.DefaultPathBuilderFactory;
-import soot.jimple.infoflow.handlers.ResultsAvailableHandler;
-import soot.jimple.infoflow.results.InfoflowResults;
-import soot.jimple.infoflow.solver.IInfoflowCFG;
-import soot.jimple.infoflow.taintWrappers.EasyTaintWrapper;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -25,11 +8,26 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import it.polimi.elet.necst.heldroid.apk.DecodedPackage;
+import it.polimi.elet.necst.heldroid.utils.Wrapper;
+import it.polimi.elet.necst.heldroid.utils.Xml;
+import soot.jimple.infoflow.android.InfoflowAndroidConfiguration;
+import soot.jimple.infoflow.android.SetupApplication;
+import soot.jimple.infoflow.android.source.AndroidSourceSinkManager.LayoutMatchingMode;
+import soot.jimple.infoflow.data.pathBuilders.DefaultPathBuilderFactory;
+import soot.jimple.infoflow.taintWrappers.EasyTaintWrapper;
+
 public class EncryptionFlowDetector {
     private static final String PERMISSION_TAG = "uses-permission";
     private static final String NAME_ATTRIBUTE = "android:name";
     private static final String WRITE_EXTERNAL_STORAGE = "android.permission.WRITE_EXTERNAL_STORAGE";
-    private static final String READ_EXTERNAL_STORAGE = "android.permission.READ_EXTERNAL_STORAGE";
 
     private static final String SOURCE_SINKS_FILE_NAME = "SourcesAndSinks.txt";
     private static final String TAINT_WRAPPER_FILE_NAME = "EasyTaintWrapperSource.txt";
@@ -61,7 +59,6 @@ public class EncryptionFlowDetector {
 
             Collection<Element> permissions = Xml.getElementsByTagName(root, PERMISSION_TAG);
             boolean canWrite = false;
-            boolean canRead = false;
 
             for (Element permission : permissions) {
                 if (!permission.hasAttribute(NAME_ATTRIBUTE))
@@ -71,8 +68,6 @@ public class EncryptionFlowDetector {
 
                 if (name.equals(WRITE_EXTERNAL_STORAGE))
                     canWrite = true;
-                else if (name.equals(READ_EXTERNAL_STORAGE))
-                    canRead = true;
 
                 /*
                  * Any app that declares the WRITE_EXTERNAL_STORAGE permission
@@ -142,16 +137,24 @@ public class EncryptionFlowDetector {
 
     private SetupApplication initAnalysis() {
         SetupApplication app = new SetupApplication(androidPlatformsDir.getAbsolutePath(), target.getOriginalApk().getAbsolutePath() );
-        app.setStopAfterFirstFlow(true);
-        app.setEnableImplicitFlows(true);
-        app.setEnableStaticFieldTracking(true);
-        app.setEnableCallbacks(true);
-        app.setEnableExceptionTracking(true);
-        app.setAccessPathLength(5);
-        app.setLayoutMatchingMode(AndroidSourceSinkManager.LayoutMatchingMode.MatchSensitiveOnly);
-        app.setFlowSensitiveAliasing(true);
-        app.setPathBuilder(DefaultPathBuilderFactory.PathBuilder.ContextSensitive);
-        app.setComputeResultPaths(true);
+        InfoflowAndroidConfiguration config = app.getConfig();
+        
+        /* We are interested in paths too */
+        InfoflowAndroidConfiguration.setOneResultPerAccessPath(true);
+        /* Do not merge paths */
+        InfoflowAndroidConfiguration.setPathAgnosticResults(true);
+  
+        InfoflowAndroidConfiguration.setAccessPathLength(5);
+        
+        config.setStopAfterFirstFlow(true);
+        config.setEnableImplicitFlows(true);
+        config.setEnableStaticFieldTracking(true);
+        config.setEnableCallbacks(true);
+        config.setEnableExceptionTracking(true);
+        config.setLayoutMatchingMode(LayoutMatchingMode.MatchSensitiveOnly);
+        config.setFlowSensitiveAliasing(true);
+        config.setPathBuilder(DefaultPathBuilderFactory.PathBuilder.ContextSensitive);
+        config.setComputeResultPaths(true);
 
         EasyTaintWrapper easyTaintWrapper = null;
 
