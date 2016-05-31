@@ -10,8 +10,13 @@
 "moneypak", "To unlock your device and to avoid other legal consequences , you are obligated to pay a release fee of 300 dollars"
 "moneypak", "Payable through GreenDot MoneyPak."
 "moneypak", "load it with 300 dollars and enter the code."
+"moneypak", "load it with $500 and enter the code."
 "moneypak", "The penalty as a base measure of punishment on you which you are obliged to pay in a current of is imposed."
+"moneypak", "Payment must be made through realoadit"
+"moneypak", "As soon as the money is paid to the U.S. Department of the Treasury, your device will be unblocked in  hours"
+"moneypak", "To unblock your device and avoid U.S. legal persecution, you are obligated to pay a fine of $200"
 
+"threat", "To unlock your device and to avoid other legal consequences , you are obligated to pay a release fee of $500"
 "threat", "This device lock is aimed to stop your illegal activity."
 "threat", "Your Device has been blocked up for safety reasons listed below."
 "threat", "All the actions performed on this device are fixed."
@@ -21,6 +26,7 @@
 "threat", "Please, mind that both your personal identities and location are well identified, and criminal case can be opened against you in course of  hours as of commission of crimes per above Articles Criminal case can be submitted to court."
 "threat", "This device is locked due to the violation of the federal laws of the United States of America"
 "threat", "The messages with terroristic motives, attempts in respect of political persons, and also in respect of top public officials were sent from your device"
+"threat", "Your device also contains elements of violence"
 "threat", "According to these data, you will be permitted to pay fine in State Treasury (in the consequence of initiative directed on protection of cyber space in U.S.A) and in doing so to seize your clerical correspondence and taking your criminal case to court for decision formulation."
 "threat", "In case of penalty non-redemption, your case will be taken to court for the further decision formulation and determination of your criminal case."
 "threat", "Seize clerical correspondence taking criminal case court decision formulation"
@@ -28,7 +34,9 @@
 "threat", "For this reason your device has been locked."
 "threat", "Information on your location and snaphots containing your face have been uploaded on the fbi cyber crime department's datacenter."
 "threat", "According to these positions your actions bear criminal character, and you are a criminal subject."
+"threat", "Anti-government slogans and statements were also sent from your device"
 
+"law", "Your device is locked due to the violation of the federal laws of the United States of America: article 161, article 148, article 215, article 301 of the Criminal Code of U.S.A."
 "law", "Under supervision of FBI., U.S.A. Ministry of Interior, Interpol, Copyright Alliance, International Cyber Security Protection Alliance."
 "law", "You are accused of committing the crime envisaged by Article 1 of United States of America criminal law."
 "law", "Article 1 of United States of America criminal law provides for the punishment of deprivation of liberty for terms from 5 to  years."
@@ -43,6 +51,7 @@
 
 "copyright", "You have been subjected to violation of Copyright and Related Rights Law (Video, Music, Software) and illegally using or distributing copyrighted contents"
 
+"porn", "Following violations were detected: child pornography, zoophilia pornography"
 "porn", "Distribution of episodes containing abuse or porn material with participation of animals"
 "porn", "Distribution and keeping of porn material with participation of children"
 "porn", "You are accused of viewing and storage of forbidden child pornography and zoophilia."

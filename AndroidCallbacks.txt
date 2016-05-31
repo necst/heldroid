@@ -95,6 +95,7 @@ android.net.wifi.p2p.WifiP2pManager$UpnpServiceResponseListener
 android.os.CancellationSignal$OnCancelListener
 android.os.IBinder$DeathRecipient
 android.os.MessageQueue$IdleHandler
+android.os.Handler$Callback
 android.os.RecoverySystem$ProgressListener
 android.preference.Preference$OnPreferenceChangeListener
 android.preference.Preference$OnPreferenceClickListener
@@ -128,7 +129,7 @@ android.view.View$OnHoverListener
 android.view.View$OnKeyListener
 android.view.View$OnLayoutChangeListener
 android.view.View$OnLongClickListener
-android.view.View$OnSystemUiVisibilityChangeListener´
+android.view.View$OnSystemUiVisibilityChangeListenerï¿½
 android.view.View$OnTouchListener
 android.view.ViewGroup$OnHierarchyChangeListener
 android.view.ViewStub$OnInflateListener
@@ -179,3 +180,5 @@ android.widget.TabHost$OnTabChangeListener
 android.widget.TextView$OnEditorActionListener
 android.widget.TimePicker$OnTimeChangedListener
 android.widget.ZoomButtonsController$OnZoomListener 
+java.lang.Runnable
+android.os.AsyncTask

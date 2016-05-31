@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.log4j.pattern.FileLocationPatternConverter;
+
 import it.polimi.elet.necst.heldroid.pipeline.ApplicationData;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminDetector;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult;
@@ -29,13 +31,17 @@ import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetecto
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionResult;
 import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
+import it.polimi.elet.necst.heldroid.ransomware.photo.PhotoDetector;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
+import it.polimi.elet.necst.heldroid.utils.CFGUtils;
+import it.polimi.elet.necst.heldroid.utils.CollectionToJsonConverter;
 import it.polimi.elet.necst.heldroid.utils.FileSystem;
 import it.polimi.elet.necst.heldroid.utils.Options;
 import it.polimi.elet.necst.heldroid.utils.PersistentFileList;
 import it.polimi.elet.necst.heldroid.utils.Stopwatch;
 import it.polimi.elet.necst.heldroid.utils.Wrapper;
+import soot.jimple.infoflow.cfg.SharedCfg;
 import soot.jimple.infoflow.results.InfoflowResults;
 
 public class MainScanner {
@@ -65,6 +71,7 @@ public class MainScanner {
 		imageScanner = Factory.createImageScanner();
 		encryptionFlowDetector = Factory.createEncryptionFlowDetector();
 		deviceAdminDetector = Factory.createDeviceAdminDetector();
+		photoAdminDetector = Factory.createPhotoAdminDetector();
 
 		examinedFiles = new PersistentFileList(
 				Globals.EXAMINED_FILES_LIST_FILE);
@@ -74,7 +81,7 @@ public class MainScanner {
 		else {
 			resultsWriter = new BufferedWriter(new FileWriter(result));
 			resultsWriter.write(
-					"Sample; LockDetected; TextDetected; TextScore; Languages; RW Permission; EncryptionDetected; DeviceAdminUsed; DeviceAdminPolicies; Comment; TimedOut; Classified files");
+					"Sample; LockDetected; TextDetected; TextScore; Languages; RW Permission; EncryptionDetected; PhotoCaptureDetected; DeviceAdminUsed; DeviceAdminPolicies; Comment; TimedOut; Classified files");
 			resultsWriter.newLine();
 		}
 
@@ -124,14 +131,8 @@ public class MainScanner {
 		unpackingThread.setName("UnpackingThread");
 
 		analysisThread = new Thread(new Runnable() {
-
-			private int analyzed = 0;
-
 			@Override
 			public void run() {
-				System.out.println(String.format("Analyzed %d files out of %d",
-						analyzed,
-						availableFiles.size()));
 				analysisRoutine();
 			}
 		});
@@ -344,8 +345,11 @@ public class MainScanner {
 		final Wrapper<AcceptanceStrategy.Result> textDetected = new Wrapper<AcceptanceStrategy.Result>(
 				AcceptanceStrategy.fail());
 		final Wrapper<Boolean> encryptionDetected = new Wrapper<Boolean>(false);
+		final Wrapper<Boolean> photoCaptureDetected = new Wrapper<>(false);
 		final Wrapper<Boolean> hasRWPermission = new Wrapper<>(false);
 		final Wrapper<Boolean> deviceAdminUsed = new Wrapper<Boolean>(false);
+		final Wrapper<Boolean> encryptionDetectorTimedOut = new Wrapper<>(
+				false);
 		final Wrapper<Set<String>> languages = new Wrapper<Set<String>>(null);
 		final Wrapper<List<Policy>> deviceAdminPolicies = new Wrapper<List<Policy>>(
 				null);
@@ -358,7 +362,7 @@ public class MainScanner {
 		final Wrapper<Double> deviceAdminDetectionTime = new Wrapper<Double>(
 				(double) ANALYSIS_TIMEOUT);
 
-		ExecutorService executor = Executors.newFixedThreadPool(3);
+		ExecutorService executor = Executors.newFixedThreadPool(4);
 
 		if (!noTextDetection) {
 			executor.submit(new Runnable() {
@@ -444,7 +448,7 @@ public class MainScanner {
 				}
 			});
 
-		if (!noEncryption)
+		if (!noEncryption) {
 			executor.submit(new Runnable() {
 				@Override
 				public void run() {
@@ -455,16 +459,30 @@ public class MainScanner {
 									applicationData.getDecodedPackage());
 							Wrapper<EncryptionResult> encryptionResult = encryptionFlowDetector.detect();
 
-							InfoflowResults infoFlow = encryptionResult.value.getInfoFlowResults();
-							Boolean result = (infoFlow != null
-									&& infoFlow	.getResults()
-												.size() > 0);
+							if (encryptionResult.value != null) {
+								if (encryptionResult.value.isTimedout()) {
+									encryptionDetectorTimedOut.value = true;
+								} else {
+									InfoflowResults infoFlow = encryptionResult.value.getInfoFlowResults();
+									boolean result = (infoFlow != null
+											&& infoFlow.getResults() != null
+											&& infoFlow	.getResults()
+														.size() > 0);
 
-							infoFlow.printResults();
-							if (encryptionDetected != null)
-								encryptionDetected.value = result;
-							if (hasRWPermission != null)
+									if (encryptionDetected != null)
+										encryptionDetected.value = result;
+								}
+							} else {
+								encryptionDetected.value = null;
+							}
+
+							if (hasRWPermission != null) {
 								hasRWPermission.value = encryptionResult.value.isWritable();
+								
+								if (!hasRWPermission.value) {
+									SharedCfg.setCfg(CFGUtils.createCfg(applicationData.getDecodedPackage()));
+								}
+							}
 						}
 					});
 
@@ -472,6 +490,7 @@ public class MainScanner {
 						encryptionDetectionTime.value = time;
 				}
 			});
+		}
 
 		if (!noDeviceAdminDetection) {
 			executor.submit(new Runnable() {
@@ -485,7 +504,26 @@ public class MainScanner {
 							deviceAdminDetector.setTarget(
 									applicationData.getDecodedPackage());
 
-							Wrapper<DeviceAdminResult> deviceAdminResult = deviceAdminDetector.detect();
+							photoAdminDetector.setTarget(
+									applicationData.getDecodedPackage());
+
+							/*
+							 * If the EncryptionFlowDetector is enabled, we will
+							 * reuse the CFG that it generates, otherwise we
+							 * will generate a new one
+							 */
+							boolean reuseCfg = !noEncryption;
+
+							Wrapper<DeviceAdminResult> deviceAdminResult = null;
+							try {
+								deviceAdminResult = deviceAdminDetector.detect(
+										reuseCfg);
+
+								photoCaptureDetected.value = photoAdminDetector.detect(
+										reuseCfg).value;
+							} catch (Throwable e) {
+								e.printStackTrace();
+							}
 							if (deviceAdminResult != null) {
 								if (deviceAdminResult.value != null) {
 									DeviceAdminResult res = deviceAdminResult.value;
@@ -523,6 +561,9 @@ public class MainScanner {
 			e.printStackTrace();
 		}
 
+		// Check if encryption analysis timedout
+		timedOut = timedOut || encryptionDetectorTimedOut.value;
+
 		// Create JSON
 		try {
 			String hash = FileSystem.hashOf(applicationData	.getDecodedPackage()
@@ -534,6 +575,7 @@ public class MainScanner {
 					lockDetected.value,
 					hasRWPermission.value,
 					encryptionDetected.value,
+					photoCaptureDetected.value,
 					deviceAdminUsed.value,
 					deviceAdminPolicies.value,
 					textDetected.value,
@@ -546,7 +588,7 @@ public class MainScanner {
 
 		try {
 			resultsWriter.write(String.format(
-					"%s; %b; %b; %f; %s; %b; %b; %b; %s; \"%s\"; %b; %s\n",
+					"%s; %b; %b; %f; %s; %b; %b; %b; %b; %s; \"%s\"; %b; %s\n",
 					apkName,
 					lockDetected.value,
 					textDetected.value.isAccepted(),
@@ -554,6 +596,7 @@ public class MainScanner {
 					languages.value,
 					hasRWPermission.value,
 					encryptionDetected.value,
+					photoCaptureDetected.value,
 					deviceAdminUsed.value,
 					deviceAdminPolicies.value,
 					textDetected.value.getComment(),
@@ -602,8 +645,9 @@ public class MainScanner {
 
 	private static String buildResponseFromResults(boolean lockDetected,
 			boolean hasRWPermission, boolean encryptionDetected,
-			boolean deviceAdminUsed, List<Policy> policies,
-			AcceptanceStrategy.Result textResult, Set<String> languages) {
+			boolean photoCaptureDetected, boolean deviceAdminUsed,
+			List<Policy> policies, AcceptanceStrategy.Result textResult,
+			Set<String> languages) {
 		StringBuilder builder = new StringBuilder();
 
 		/*
@@ -625,11 +669,14 @@ public class MainScanner {
 				textResult.isAccepted()));
 		builder.append(String.format("   \"textScore\": %s,\n",
 				formatter.format(textResult.getScore())));
-		builder.append(String.format("   \"languages\": \"%s\",\n", languages));
+		builder.append(String.format("   \"languages\": %s,\n",
+				CollectionToJsonConverter.convert(languages)));
 		builder.append(String.format("   \"hasRWPermission\": %b,\n",
 				hasRWPermission));
 		builder.append(String.format("   \"encryptionDetected\": %b,\n",
 				encryptionDetected));
+		builder.append(String.format("   \"photoCaptureDetected\": %b,\n",
+				photoCaptureDetected));
 		builder.append(String.format("   \"deviceAdminUsed\": %b,\n",
 				deviceAdminUsed));
 		builder.append(String.format("   \"deviceAdminPolicies\": \"%s\",\n",
@@ -673,10 +720,11 @@ public class MainScanner {
 		try {
 			String javaBin = System.getProperty("java.home") + File.separator
 					+ "bin" + File.separator + "java";
-			File currentJar = new File(Main.class	.getProtectionDomain()
-													.getCodeSource()
-													.getLocation()
-													.toURI());
+//			File currentJar = new File(Main.class	.getProtectionDomain()
+//													.getCodeSource()
+//													.getLocation()
+//													.toURI());
+			File currentJar = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().getFile());
 			List<String> commands = new ArrayList<String>();
 
 			commands.add(javaBin);
@@ -703,12 +751,12 @@ public class MainScanner {
 	private static final int UNPACKING_WAIT_TIME = 10; // seconds
 	private static final int ANALYSIS_WAIT_TIME = 10;
 
-	private static final int ANALYSIS_TIMEOUT = 10 * 60; // seconds
+	private static final int ANALYSIS_TIMEOUT = 210; // seconds
 
 	// Maximum number of times analysis can stall: beyond this, the program
 	// assumes the analysis thread has
 	// crashed and restarts
-	private static final int MAX_ANALYSIS_STALLS = 30;
+	private static final int MAX_ANALYSIS_STALLS = 50;
 	private static final int MAX_UNPACKING_STALLS = 30;
 	private static int analysisStalls = 0;
 	private static int unpackingStalls = 0;
@@ -732,6 +780,7 @@ public class MainScanner {
 	private static ImageScanner imageScanner;
 	private static EncryptionFlowDetector encryptionFlowDetector;
 	private static DeviceAdminDetector deviceAdminDetector;
+	private static PhotoDetector photoAdminDetector;
 
 	private static List<File> availableFiles;
 	private static List<ApplicationData> availableUnpackedData;

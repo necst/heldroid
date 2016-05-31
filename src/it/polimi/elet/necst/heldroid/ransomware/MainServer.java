@@ -38,6 +38,7 @@ import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
+import it.polimi.elet.necst.heldroid.utils.CollectionToJsonConverter;
 import it.polimi.elet.necst.heldroid.utils.FileSystem;
 import it.polimi.elet.necst.heldroid.utils.MixedInputStream;
 import soot.jimple.infoflow.results.InfoflowResults;
@@ -170,7 +171,7 @@ public class MainServer implements Runnable {
 			encryptionDetected = (infoFlowResults != null
 					&& infoFlowResults	.getResults()
 										.size() > 0);
-			DeviceAdminResult deviceAdminResult = deviceAdminDetector.detect().value;
+			DeviceAdminResult deviceAdminResult = deviceAdminDetector.detect(true).value;
 			deviceAdminUsed = deviceAdminResult.isDeviceAdminUsed();
 			policies = deviceAdminResult.getPolicies();
 
@@ -242,7 +243,7 @@ public class MainServer implements Runnable {
 				textResult.isAccepted()));
 		builder.append(String.format("   \"textScore\": %s,\n",
 				formatter.format(textResult.getScore())));
-		builder.append(String.format("   \"languages\": \"%s\",\n", languages));
+		builder.append(String.format("   \"languages\": %s,\n", CollectionToJsonConverter.convert(languages)));
 		builder.append(String.format("   \"hasRWPermission\": %b,\n",
 				hasRWPermission));
 		builder.append(String.format("   \"encryptionDetected\": %b,\n",

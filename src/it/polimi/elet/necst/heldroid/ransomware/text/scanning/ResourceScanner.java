@@ -140,6 +140,7 @@ public abstract class ResourceScanner {
 			String languageCode = detector.detect();
 			return SupportedLanguage.fromCode(languageCode);
 		} catch (LangDetectException e) {
+			e.printStackTrace();
 			return null;
 		}
 	}

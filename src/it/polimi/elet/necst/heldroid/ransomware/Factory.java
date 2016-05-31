@@ -17,6 +17,7 @@ import it.polimi.elet.necst.heldroid.ransomware.locking.AdminLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.locking.DialogLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.locking.DrawOverLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
+import it.polimi.elet.necst.heldroid.ransomware.photo.PhotoDetector;
 import it.polimi.elet.necst.heldroid.ransomware.text.SupportedLanguage;
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.GenericTextClassifier;
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.Segmenter;
@@ -47,6 +48,10 @@ public class Factory {
     	DeviceAdminDetector deviceAdminDetector = new DeviceAdminDetector();
     	
     	return deviceAdminDetector;
+    }
+    
+    public static PhotoDetector createPhotoAdminDetector() {
+    	return new PhotoDetector();
     }
 
     public static TrafficScanner createTrafficScanner() {

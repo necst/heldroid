@@ -22,7 +22,8 @@
 <java.util.List: boolean addAll(java.util.Collection)>
 <java.util.List: boolean addAll(int,java.util.Collection)>
 -<java.util.List: void clear()>
-<java.util.List: java.util.Iterator iterator()>()
+<java.util.List: java.util.Iterator iterator()>
+<java.util.ArrayList: java.util.Iterator iterator()>
 
 <java.util.Iterator: java.lang.Object next()>
 
@@ -79,6 +80,7 @@
 <java.lang.StringBuilder: java.lang.StringBuilder insert(int,java.lang.String)>
 <java.lang.StringBuilder: java.lang.StringBuilder insert(int,java.lang.CharSequence)>
 <java.lang.StringBuilder: java.lang.StringBuilder insert(int,java.lang.CharSequence,int,int)>
+<java.lang.StringBuilder: java.lang.String toString()>
 
 <java.lang.StringBuffer: void <init>(java.lang.String)>
 <java.lang.StringBuffer: java.lang.StringBuffer append(boolean)>
@@ -127,6 +129,8 @@
 <java.lang.String: java.lang.String valueOf(int)>
 <java.lang.String: java.lang.String valueOf(long)>
 <java.lang.String: java.lang.String valueOf(java.lang.Object)>
+<java.lang.String: java.lang.String substring(int)>
+<java.lang.String: java.lang.String substring(int,int)>
 
 <java.lang.String: java.lang.String concat(java.lang.String)>
 
@@ -212,11 +216,24 @@
 <java.math.BigInteger: void <init>(java.lang.String,int)>
 <java.math.BigInteger: java.math.BigInteger valueOf(long)>
 
+<javax.crypto.Cipher: int update(java.nio.ByteBuffer,java.nio.ByteBuffer)>
+<javax.crypto.Cipher: byte[] update(byte[])>
+<javax.crypto.Cipher: byte[] update(byte[],int,int)>
+<javax.crypto.Cipher: int update(byte[],int,int,byte[])>
+<javax.crypto.Cipher: int update(byte[],int,int,byte[],int)>
+
 <java.io.FileInputStream: void <init>(java.io.File)>
 <java.io.FileOutputStream: void <init>(java.lang.String)>
+<java.io.FileOutputStream: void <init>(java.io.File)>
 
 <java.io.File: void <init>(java.lang.String)>
 <java.io.File: void <init>(java.lang.String,java.lang.String)>
+<java.io.File: void <init>(java.io.File,java.lang.String)>
+<java.io.File: java.io.File[] listFiles()>
+<java.io.File: java.lang.String getPath()>
+<java.io.File: java.lang.String getName()>
+<java.io.File: java.lang.String getAbsolutePath()>
+<java.io.File: java.lang.String toString()>
 
 <java.text.MessageFormat: void <init>(java.lang.String)>
 <java.text.MessageFormat: void <init>(java.lang.String,java.util.Locale)>

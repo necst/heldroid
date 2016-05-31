@@ -30,6 +30,7 @@ import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
+import it.polimi.elet.necst.heldroid.utils.CollectionToJsonConverter;
 import it.polimi.elet.necst.heldroid.utils.FileSystem;
 import it.polimi.elet.necst.heldroid.utils.Options;
 import it.polimi.elet.necst.heldroid.utils.PersistentFileList;
@@ -361,7 +362,9 @@ public class MainScannerSequential {
 							deviceAdminDetector.setTarget(
 									applicationData.getDecodedPackage());
 
-							Wrapper<DeviceAdminResult> deviceAdminResult = deviceAdminDetector.detect();
+							boolean reuseCfg = !noEncryption;
+							
+							Wrapper<DeviceAdminResult> deviceAdminResult = deviceAdminDetector.detect(reuseCfg);
 							if (deviceAdminResult != null) {
 								if (deviceAdminResult.value != null) {
 									DeviceAdminResult res = deviceAdminResult.value;
@@ -499,7 +502,7 @@ public class MainScannerSequential {
 				textResult.isAccepted()));
 		builder.append(String.format("   \"textScore\": %s,\n",
 				formatter.format(textResult.getScore())));
-		builder.append(String.format("   \"languages\": \"%s\",\n", languages));
+		builder.append(String.format("   \"languages\": %s,\n", CollectionToJsonConverter.convert(languages)));
 		builder.append(String.format("   \"hasRWPermission\": %b,\n",
 				hasRWPermission));
 		builder.append(String.format("   \"encryptionDetected\": %b,\n",

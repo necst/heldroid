@@ -1,0 +1,4 @@
+# We are interested in cipher.init method and its overloads
+1 -> <javax.crypto.Cipher: void init(1,_)>
+1 -> <javax.crypto.Cipher: void init(1,_,_)>
+1 -> <javax.crypto.Cipher: void init(1,_,_,_)>

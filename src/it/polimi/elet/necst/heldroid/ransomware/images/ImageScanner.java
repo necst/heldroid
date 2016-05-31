@@ -2,7 +2,9 @@ package it.polimi.elet.necst.heldroid.ransomware.images;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.text.Normalizer;
@@ -28,15 +30,19 @@ import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifi
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifierCollection;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.ResourceScanner;
 import it.polimi.elet.necst.heldroid.utils.FileSystem;
-import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.TesseractException;
 
 public class ImageScanner extends ResourceScanner {
 
 	// Min number of characters that text must contain to be analysed
 	private static final int MIN_TEXT_LENGTH = 15;
 	private static final String TESSERACT_DEFAULT_LANG = "eng+rus";
-	
+
+	/*
+	 * The biggest Android icon usually measures 200x200 px.
+	 */
+	private static final int MIN_IMAGE_HEIGHT = 201; // Pixels
+	private static final int MIN_IMAGE_WIDTH = 201; // Pixels
+
 	private String tesseractLanguage = TESSERACT_DEFAULT_LANG;
 
 	public ImageScanner(TextClassifierCollection textClassifierCollection) {
@@ -56,7 +62,11 @@ public class ImageScanner extends ResourceScanner {
 						".gif" };
 
 				for (String ext : extensions) {
-					if (name.endsWith(ext))
+					/*
+					 * Icons starting with "abc_" belongs to android appcompat
+					 * v7
+					 */
+					if (!name.startsWith("abc_") && name.endsWith(ext))
 						return true;
 				}
 				return false;
@@ -88,6 +98,15 @@ public class ImageScanner extends ResourceScanner {
 
 	private TextClassification findRansomwareText(File image) {
 		try {
+			/*
+			 * We will discard small images, since they can be icons and we
+			 * don't want to waste time
+			 */
+			if (!shouldAnalyze(image)) {
+				System.out.println("Skipping small image: " + image.getName());
+				return TextClassification.empty();
+			}
+
 			File imageBW = convertToGrayscale(image);
 
 			String extracted = extractText(imageBW);
@@ -103,11 +122,23 @@ public class ImageScanner extends ResourceScanner {
 				return result;
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (Throwable e) {
-			e.printStackTrace();
+			System.err.println(
+					"Cannot convert image to grayscale: " + e.getMessage());
 		}
 		return TextClassification.empty();
+	}
+
+	private boolean shouldAnalyze(File image) {
+		try {
+			BufferedImage bi = ImageIO.read(image);
+			return bi != null &&
+					bi.getWidth() >= MIN_IMAGE_WIDTH &&
+					bi.getHeight() >= MIN_IMAGE_HEIGHT;
+		} catch (IOException e) {
+			// If we cannot open the image we cannot analyze it
+			System.err.println("Cannot open image: " + image.getName());
+			return false;
+		}
 	}
 
 	protected TextClassification classifyElementText(String text,
@@ -205,7 +236,8 @@ public class ImageScanner extends ResourceScanner {
 	 * language(s). If {@code hint} is {@code null}, a default language of
 	 * "eng+rus" will be used.
 	 * 
-	 * @param hint The languages Tesseract should use.
+	 * @param hint
+	 *            The languages Tesseract should use.
 	 */
 	public void setTesseractLanguage(Set<SupportedLanguage> hint) {
 		if (hint == null || hint.size() == 0) {
@@ -230,22 +262,64 @@ public class ImageScanner extends ResourceScanner {
 	}
 
 	private String tesseract(File image) {
-		Tesseract instance = Tesseract.getInstance();
-		instance.setDatapath("/usr/local/share/tessdata/");
-
 		if (tesseractLanguage == null) {
 			tesseractLanguage = TESSERACT_DEFAULT_LANG;
 		}
-		instance.setLanguage(tesseractLanguage);
+
+		BufferedReader reader = null;
+		File extractedTextFile = null;
+		try {
+			extractedTextFile = File.createTempFile("extracted", ".txt");
+			String extractedTextWithoutExtension = extractedTextFile.getAbsolutePath()
+																	.substring(
+																			0,
+																			extractedTextFile	.getAbsolutePath()
+																								.lastIndexOf(
+																										'.'));
+			Process tesseract = Runtime	.getRuntime()
+										.exec(new String[] { "tesseract",
+												image.getAbsolutePath(),
+												extractedTextWithoutExtension,
+												"-l", tesseractLanguage, "-c",
+												"tessedit_char_blacklist=|\\" });
+			tesseract.waitFor();
+
+			reader = new BufferedReader(new FileReader(extractedTextFile));
+			StringBuilder result = new StringBuilder();
+
+			String line;
+			while ((line = reader.readLine()) != null) {
+				result.append(line);
+			}
+			return result.toString();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} finally {
+			if (extractedTextFile != null) {
+				extractedTextFile.delete();
+			}
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		// instance.setDatapath("/usr/local/share/tessdata/");
+
+		// instance.setLanguage(tesseractLanguage);
 
 		// Ignore the following chars: | (pipe), \ (backslash)
-		instance.setTessVariable("tessedit_char_blacklist", "|\\");
-		try {
-			String result = instance.doOCR(image);
-			return result;
-		} catch (TesseractException e) {
-			e.printStackTrace();
-		}
+		// instance.setTessVariable("tessedit_char_blacklist", "|\\");
+		// try {
+		// String result = instance.doOCR(image);
+		// return result;
+		// } catch (TesseractException e) {
+		// e.printStackTrace();
+		// }
 
 		return null;
 	}

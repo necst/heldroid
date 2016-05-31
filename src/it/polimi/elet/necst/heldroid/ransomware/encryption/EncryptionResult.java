@@ -6,6 +6,7 @@ public class EncryptionResult {
 	
 	private InfoflowResults infoFlowResults;
 	private boolean writable;
+	private boolean timedout;
 	
 	public InfoflowResults getInfoFlowResults() {
 		return infoFlowResults;
@@ -22,5 +23,13 @@ public class EncryptionResult {
 	public void setInfoFlowResults(InfoflowResults infoFlowResults) {
 		this.infoFlowResults = infoFlowResults;
 	}	
+	
+	public void setTimedout(boolean timedout) {
+		this.timedout = timedout;
+	}
+	
+	public boolean isTimedout() {
+		return timedout;
+	}
 
 }
