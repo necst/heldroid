@@ -10,8 +10,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import it.polimi.elet.necst.heldroid.ransomware.device_admin.InstructionSimulator2;
-import it.polimi.elet.necst.heldroid.ransomware.device_admin.InstructionSimulator2.Node;
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.InstructionSimulator;
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.InstructionSimulator.Node;
+import soot.Immediate;
 import soot.RefType;
 import soot.Scene;
 import soot.SootClass;
@@ -108,6 +109,7 @@ public class ReflectionSimulator {
 						 * Check that the invoked method is
 						 * java.lang.reflect.Method->invoke
 						 */
+						System.out.println("********** CALLEEE: "+callee);
 						if (callee	.getName()
 									.equals("invoke")
 								&& SootClassUtil.isOrExtendsClass(declClass,
@@ -136,6 +138,8 @@ public class ReflectionSimulator {
 		for (Unit start : startPoints) {
 			results.addAll(searcher.search(start, false));
 		}
+		
+		System.out.println("****** Start points: "+results.size());
 
 		/*
 		 * If there is at least 1 result search for relatedMethods, otherwise
@@ -192,11 +196,13 @@ public class ReflectionSimulator {
 
 			for (String name : names) {
 				if (relatedMethods.contains(
-						enforceTargetType.getClassName() + "->" + name)) {
+						(enforceTargetType != null ? (enforceTargetType.getClassName() + "->") : "") + name)) {
+					System.out.println("*** YAY");
 					return true;
 				}
 			}
 
+			System.out.println("NAY");
 			return false;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -223,6 +229,13 @@ public class ReflectionSimulator {
 						.equals(RefType.v("java.lang.String"))) {
 					return null;
 				}
+				
+				System.out.println("Is string constant??? "+ ie +" -> "+(ie.getArg(0) instanceof StringConstant));
+				if (ie.getArg(0) instanceof StringConstant) {
+					Set<String> result = new HashSet<>();
+					result.add(((StringConstant) (ie.getArg(0))).value);
+					return result;
+				}
 
 				// Find method name
 				// findMethodNameReflection(iie.getBase(), callStmt);
@@ -244,11 +257,11 @@ public class ReflectionSimulator {
 						String extractedString = extractString(cfg, methodName,
 								constantDeclaration);
 
-						InstructionSimulator2 simulator = new InstructionSimulator2(
+						InstructionSimulator simulator = new InstructionSimulator(
 								cfg, constantDeclaration,
 								reflectionMethodInvoke);
-						Set<InstructionSimulator2.Node> nodes = simulator.search(
-								new InstructionSimulator2.Node(extractedString,
+						Set<InstructionSimulator.Node> nodes = simulator.search(
+								new InstructionSimulator.Node(extractedString,
 										constantDeclaration),
 								true);
 
@@ -261,11 +274,11 @@ public class ReflectionSimulator {
 						for (int i = 0; i < ie2.getArgCount(); i++) {
 							Value argument = ie2.getArg(i);
 							if (argument instanceof StringConstant) {
-								InstructionSimulator2 simulator = new InstructionSimulator2(
+								InstructionSimulator simulator = new InstructionSimulator(
 										cfg, constantDeclaration,
 										reflectionMethodInvoke);
 								Set<Node> nodes = simulator.search(
-										new InstructionSimulator2.Node(
+										new InstructionSimulator.Node(
 												((StringConstant) argument).value,
 												constantDeclaration),
 										true);

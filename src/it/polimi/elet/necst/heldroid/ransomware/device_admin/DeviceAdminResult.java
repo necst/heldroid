@@ -228,6 +228,7 @@ public class DeviceAdminResult {
 
 	private List<Policy> policies;
 	private boolean deviceAdminUsed;
+	private boolean isFromReflection;
 
 	/**
 	 * Creates an empty instance.
@@ -242,13 +243,27 @@ public class DeviceAdminResult {
 	 * @param policies
 	 *            The policies to include.
 	 */
-	public DeviceAdminResult(List<Policy> policies) {
+	public DeviceAdminResult(List<Policy> policies, boolean isFromReflection) {
 		this();
 		policies.addAll(policies);
 	}
 
 	public void addAll(Collection<Policy> policies) {
 		policies.addAll(policies);
+	}
+	
+	/**
+	 * @param isFromReflection the isFromReflection to set
+	 */
+	public void setFromReflection(boolean isFromReflection) {
+		this.isFromReflection = isFromReflection;
+	}
+	
+	/**
+	 * @return the isFromReflection
+	 */
+	public boolean isFromReflection() {
+		return isFromReflection;
 	}
 
 	public List<Policy> getPolicies() {

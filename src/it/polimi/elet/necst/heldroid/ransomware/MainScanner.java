@@ -31,6 +31,7 @@ import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetecto
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionResult;
 import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
+import it.polimi.elet.necst.heldroid.ransomware.photo.PhotoAdminResult;
 import it.polimi.elet.necst.heldroid.ransomware.photo.PhotoDetector;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
@@ -81,7 +82,7 @@ public class MainScanner {
 		else {
 			resultsWriter = new BufferedWriter(new FileWriter(result));
 			resultsWriter.write(
-					"Sample; LockDetected; TextDetected; TextScore; Languages; RW Permission; EncryptionDetected; PhotoCaptureDetected; DeviceAdminUsed; DeviceAdminPolicies; Comment; TimedOut; Classified files");
+					"Sample; LockDetected; LockStrategy; TextDetected; TextScore; Languages; RW Permission; EncryptionDetected; PhotoCaptureDetected; DeviceAdminUsed; DeviceAdminPolicies; DevAdminFromReflection; Comment; TimedOut; Classified files");
 			resultsWriter.newLine();
 		}
 
@@ -342,6 +343,7 @@ public class MainScanner {
 											.getOriginalApk());
 
 		final Wrapper<Boolean> lockDetected = new Wrapper<Boolean>(false);
+		final Wrapper<String> lockStrategy = new Wrapper<>(null);
 		final Wrapper<AcceptanceStrategy.Result> textDetected = new Wrapper<AcceptanceStrategy.Result>(
 				AcceptanceStrategy.fail());
 		final Wrapper<Boolean> encryptionDetected = new Wrapper<Boolean>(false);
@@ -351,6 +353,8 @@ public class MainScanner {
 		final Wrapper<Boolean> encryptionDetectorTimedOut = new Wrapper<>(
 				false);
 		final Wrapper<Set<String>> languages = new Wrapper<Set<String>>(null);
+		final Wrapper<Boolean> isFromReflection = new Wrapper<>(false);
+		final Wrapper<PhotoAdminResult> photoCaptureResult = new Wrapper<>(null);
 		final Wrapper<List<Policy>> deviceAdminPolicies = new Wrapper<List<Policy>>(
 				null);
 		final Wrapper<Double> lockDetectionTime = new Wrapper<Double>(
@@ -440,6 +444,11 @@ public class MainScanner {
 							Boolean result = lockDetected.value = multiLockingStrategy.detect();
 							if (lockDetected != null)
 								lockDetected.value = result;
+							
+							if (result) {
+								lockStrategy.value = multiLockingStrategy.getSuccessfulStrategy();
+							}
+							
 						}
 					});
 
@@ -519,8 +528,10 @@ public class MainScanner {
 								deviceAdminResult = deviceAdminDetector.detect(
 										reuseCfg);
 
-								photoCaptureDetected.value = photoAdminDetector.detect(
+								photoCaptureResult.value = photoAdminDetector.detect(
 										reuseCfg).value;
+								
+								photoCaptureDetected.value = photoCaptureResult.value.isPhotoDetected();
 							} catch (Throwable e) {
 								e.printStackTrace();
 							}
@@ -533,6 +544,8 @@ public class MainScanner {
 
 									if (deviceAdminUsed != null)
 										deviceAdminUsed.value = true;
+									
+									isFromReflection.value = deviceAdminResult.value.isFromReflection() || photoCaptureResult.value.isFromReflection();
 
 									// No longer needed
 									deviceAdminResult = null;
@@ -573,11 +586,13 @@ public class MainScanner {
 			OutputStream jsonWriter = new FileOutputStream(hashDirectory);
 			String json = MainScanner.buildResponseFromResults(
 					lockDetected.value,
+					lockStrategy.value,
 					hasRWPermission.value,
 					encryptionDetected.value,
 					photoCaptureDetected.value,
 					deviceAdminUsed.value,
 					deviceAdminPolicies.value,
+					isFromReflection.value,
 					textDetected.value,
 					languages.value);
 			jsonWriter.write(json.getBytes());
@@ -588,9 +603,10 @@ public class MainScanner {
 
 		try {
 			resultsWriter.write(String.format(
-					"%s; %b; %b; %f; %s; %b; %b; %b; %b; %s; \"%s\"; %b; %s\n",
+					"%s; %b; %s; %b; %f; %s; %b; %b; %b; %b; %s; %s; \"%s\"; %b; %s\n",
 					apkName,
 					lockDetected.value,
+					lockStrategy.value,
 					textDetected.value.isAccepted(),
 					textDetected.value.getScore(),
 					languages.value,
@@ -599,6 +615,7 @@ public class MainScanner {
 					photoCaptureDetected.value,
 					deviceAdminUsed.value,
 					deviceAdminPolicies.value,
+					isFromReflection.value,
 					textDetected.value.getComment(),
 					timedOut,
 					textDetected.value.getFileClassification()));
@@ -644,9 +661,10 @@ public class MainScanner {
 	}
 
 	private static String buildResponseFromResults(boolean lockDetected,
+			String lockStrategy,
 			boolean hasRWPermission, boolean encryptionDetected,
 			boolean photoCaptureDetected, boolean deviceAdminUsed,
-			List<Policy> policies, AcceptanceStrategy.Result textResult,
+			List<Policy> policies, boolean isFromReflection, AcceptanceStrategy.Result textResult,
 			Set<String> languages) {
 		StringBuilder builder = new StringBuilder();
 
@@ -665,6 +683,8 @@ public class MainScanner {
 		builder.append("{\n");
 		builder.append(
 				String.format("   \"lockDetected\": %b,\n", lockDetected));
+		builder.append(
+				String.format("   \"lockStrategy\": \"%s\",\n", lockStrategy));
 		builder.append(String.format("   \"textDetected\": %b,\n",
 				textResult.isAccepted()));
 		builder.append(String.format("   \"textScore\": %s,\n",
@@ -681,6 +701,8 @@ public class MainScanner {
 				deviceAdminUsed));
 		builder.append(String.format("   \"deviceAdminPolicies\": \"%s\",\n",
 				policies));
+		builder.append(String.format("   \"fromReflection\": %b,\n",
+				isFromReflection));
 		builder.append(String.format("   \"textComment\": \"%s\",\n",
 				textResult.getComment()));
 		builder.append(String.format("   \"suspiciousFiles\": \"%s\"\n",

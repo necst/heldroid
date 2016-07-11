@@ -3,6 +3,7 @@ package it.polimi.elet.necst.heldroid.ransomware.encryption;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -23,6 +24,7 @@ import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.utils.Wrapper;
 import it.polimi.elet.necst.heldroid.utils.Xml;
 import soot.ArrayType;
+import soot.SootClass;
 import soot.SootMethod;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InvokeExpr;
@@ -41,6 +43,7 @@ import soot.jimple.infoflow.problems.conditions.ConditionSet;
 import soot.jimple.infoflow.taintWrappers.EasyTaintWrapper;
 import soot.jimple.infoflow.taintWrappers.ITaintPropagationWrapper;
 import soot.jimple.infoflow.taintWrappers.TaintWrapperSet;
+import soot.jimple.infoflow.util.SystemClassHandler;
 
 public class EncryptionFlowDetector {
 	private static final String PERMISSION_TAG = "uses-permission";
@@ -212,8 +215,8 @@ public class EncryptionFlowDetector {
 		// navigator.setIgnoreFlowsInSystemPackages(true);
 		// config.setCFGNavigator(navigator);
 
-		// config.setConditions(conditions);
-		// config.setConditionFilename("Conditions.txt");
+		config.setConditions(conditions);
+//		config.setConditionFilename("Conditions.txt");
 
 		EasyTaintWrapper easyTaintWrapper = null;
 		TaintWrapperSet taintSet = new TaintWrapperSet();
@@ -237,7 +240,13 @@ public class EncryptionFlowDetector {
 
 			@Override
 			public boolean supportsCallee(SootMethod method) {
-				return (method	.getName()
+				SootClass sootClass = method.getDeclaringClass();
+				boolean isInputStream = sootClass.getName().equals(InputStream.class.getName());
+				while (!isInputStream && sootClass.hasSuperclass()) {
+					sootClass = sootClass.getSuperclass();
+					sootClass.getName().equals(InputStream.class.getName());
+				}
+				return (isInputStream && method	.getName()
 								.equals("read"));
 			}
 
@@ -277,7 +286,7 @@ public class EncryptionFlowDetector {
 						result.add(d1.deriveNewAbstraction(ie.getArg(0), false, stmt, ie.getArg(0).getType(), ArrayTaintType.ContentsAndLength));
 					} else if (ie instanceof InstanceInvokeExpr && method.getName().equals("update")) {
 						result.add(d1.deriveNewAbstraction(AccessPathFactory.v().createAccessPath(((InstanceInvokeExpr) ie).getBase(), true), stmt));
-					}
+					}	
 				}
 				
 				if (result.isEmpty()) {

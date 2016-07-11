@@ -3,17 +3,27 @@
  */
 package it.polimi.elet.necst.heldroid.ransomware.device_admin;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 
+import soot.PrimType;
+import soot.RefType;
 import soot.SootMethod;
+import soot.Type;
 import soot.Unit;
 import soot.Value;
+import soot.jimple.DoubleConstant;
+import soot.jimple.FloatConstant;
+import soot.jimple.IntConstant;
+import soot.jimple.InvokeExpr;
+import soot.jimple.LongConstant;
+import soot.jimple.Stmt;
+import soot.jimple.StringConstant;
+import soot.jimple.infoflow.problems.conditions.BreadthFirstSearch;
+import soot.jimple.infoflow.problems.conditions.ValueUtil;
 import soot.jimple.infoflow.solver.cfg.IInfoflowCFG;
 
 /**
@@ -25,117 +35,190 @@ import soot.jimple.infoflow.solver.cfg.IInfoflowCFG;
  * @param <Type>
  *            The type of the {@link Value}.
  */
-public class InstructionSimulator<Type>{
+public class InstructionSimulator
+		extends BreadthFirstSearch<InstructionSimulator.Node> {
 
-	protected IInfoflowCFG mCfg;
-	protected Type mRaw;
-	protected Unit mStartPoint;
-	protected Unit mEndPoint;
+	protected Unit startNode;
+	protected Unit endNode;
 
 	/**
-	 * Holds the current Unit together with the current value for the variable,
-	 * since the variable can have different values depending on the execution
-	 * path.
-	 * 
-	 * @author Nicola Dellarocca
-	 *
+	 * @param cfg
 	 */
-	private class Node {
-		private Type value;
+	public InstructionSimulator(IInfoflowCFG cfg, Unit startNode,
+			Unit endNode) {
+		super(cfg);
+
+		this.startNode = startNode;
+		this.endNode = endNode;
+	}
+
+	public static class Node {
+		private String value;
 		private Unit unit;
 
 		/**
 		 * Convenience constructor
 		 */
-		private Node(Type value, Unit node) {
+		public Node(String value, Unit node) {
 			this.value = value;
 			this.unit = node;
 		}
-	}
 
-	/**
-	 * Creates a new simulator.
-	 * 
-	 * @param raw
-	 *            The initial value for the variable.
-	 * @param startPoint
-	 *            The node from which to start the simulation.
-	 * @param endPoint
-	 *            The node at which the simulation must end.
-	 */
-	public InstructionSimulator(IInfoflowCFG cfg, Type raw, Unit startPoint,
-			Unit endPoint) {
-		this.mCfg = cfg;
-		this.mRaw = raw;
-		this.mStartPoint = startPoint;
-		this.mEndPoint = endPoint;
-	}
-
-	/**
-	 * Performs the simulation (navigating the CFG forward).
-	 * 
-	 * @return The resulting values for the variable. Note that it can be a set
-	 *         containing only the original value (i.e. the one provided to the
-	 *         constructor) if no modification occurs or in case of error.
-	 */
-	public Set<Type> simulate() {
-		Set<Type> result = new HashSet<>();
-		/*
-		 * We will perform a breadth-first visit with removal of repeated nodes
+		/**
+		 * @return the node
 		 */
-		Queue<Node> toVisit = new ArrayDeque<>();
-		Set<Node> alreadyVisited = new HashSet<>();
-		
-		toVisit.add(new Node(this.mRaw, this.mStartPoint));
-		
-		while (!toVisit.isEmpty()) {
-			Node currentNode = toVisit.remove();
-			
-			// Skip if already visited
-			if (alreadyVisited.contains(currentNode)) {
-				continue;
-			}
-			
-			// Check if we reached the end
-			if (currentNode.unit.equals(this.mEndPoint)) {
-				return result;
-			}
-			
-			// Add to visited nodes
-			alreadyVisited.add(currentNode);
-			
-			/*
-			 * Check if current statement performs a modification 
-			 */
-			
+		public Unit getNode() {
+			return unit;
+		}
+
+		/**
+		 * @param node
+		 *            the node to set
+		 */
+		public void setNode(Unit node) {
+			this.unit = node;
+		}
+
+		/**
+		 * @return the value
+		 */
+		public String getValue() {
+			return value;
+		}
+
+		/**
+		 * @param value
+		 *            the value to set
+		 */
+		public void setValue(String value) {
+			this.value = value;
 		}
 		
-		// We have an error or we didn't reach the end. Return the initial value
-		result.clear();
-		result.add(mRaw);
-		return result;
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public String toString() {
+			return unit+"->"+value;
+		}
 	}
 
-	protected Set<Node> getNextNode(Node current) {
-		Set<Node> result = new HashSet<>(0);
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected Collection<InstructionSimulator.Node> nextNodes(
+			InstructionSimulator.Node current) {
+		Set<Node> result = new HashSet<>();
 
-		// Add successors
-		for (Unit succ : mCfg.getSuccsOf(current.unit)) {
-			result.add(new Node(current.value, succ));
-		}
-
-		// If this is a method call, inspect the callees
-		if (mCfg.isCallStmt(current.unit)) {
-			Collection<SootMethod> callees = mCfg.getCalleesOfCallAt(
+		/*
+		 * If this is a method call we need to check the callee. If it is a
+		 * String transformation method we will apply it, otherwise we will
+		 * inspect successors
+		 */
+		if (cfg.isCallStmt(current.unit)) {
+			Collection<SootMethod> callees = cfg.getCalleesOfCallAt(
 					current.unit);
+
 			for (SootMethod callee : callees) {
-				for (Unit startPoint : mCfg.getStartPointsOf(callee)) {
-					result.add(new Node(current.value, startPoint));
+				/*
+				 * If it calls a String transformation method, then apply it
+				 */
+				if (callee	.getDeclaringClass()
+							.getName()
+							.equals(current.value	.getClass()
+													.getName())) {
+					InvokeExpr ie = ((Stmt) current.unit).getInvokeExpr();
+					
+					// Extract params
+					Object[] invokeArgs = new Object[ie.getArgCount()];
+					for (int i=0; i<invokeArgs.length; i++) {
+						Value arg = ie.getArg(i);
+						
+						invokeArgs[i] = ValueUtil.extractValue(arg);
+					}
+					
+					// Assign to the node the new value
+					current.value = applyTransformation(current.value, callee, invokeArgs);
+				} else {
+					for (Unit startPoint : cfg.getStartPointsOf(callee)) {
+						result.add(new Node(current.value, startPoint));
+					}
 				}
 			}
 		}
 
+		// Add all successors
+		for (Unit succ : cfg.getSuccsOf(current.unit)) {
+			result.add(new Node(current.value, succ));
+		}
+
 		return result;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected boolean isResult(InstructionSimulator.Node node) {
+		return node.unit.equals(endNode);
+	}
+
+	/**
+	 * Applies the transformation to the current value and returns the
+	 * transformed value.
+	 * 
+	 * @param currentValue
+	 * @param transformation
+	 * @return
+	 */
+	protected String applyTransformation(String currentValue,
+			SootMethod transformation, Object[] values) {
+		// Ignore constructor
+		if (transformation.getName().equals("<init>")) {
+			return currentValue;
+		}
+		
+		Class<?> clazz = String.class;
+
+		Class<?>[] paramValues = new Class<?>[transformation.getParameterCount()];
+
+		try {
+			for (int i = 0; i < paramValues.length; i++) {
+				Type t = transformation.getParameterType(i);
+
+				String className = null;
+				if (t instanceof PrimType) {
+					className = ((PrimType) t)	.boxedType()
+												.getClassName();
+				} else if (t instanceof RefType) {
+					className = ((RefType) t).getClassName();
+				}
+
+				if (className == null) {
+					throw new IllegalArgumentException(
+							"Cannot detect parameter types for: "
+									+ transformation);
+				}
+
+				if (className.equals("java.lang.Integer")) {
+					paramValues[i] = int.class; 
+				} else {
+					paramValues[i] = Class.forName(className);
+				}
+
+			}
+			System.out.println("*** Invoking "+transformation.getName()+" with params: "+Arrays.toString(paramValues)+" on value: "+currentValue);
+			Method method = clazz.getDeclaredMethod(transformation.getName(), paramValues);
+			Object result = method.invoke(currentValue, values);
+			System.out.println("*** -> RESULT = "+result);
+			if (result instanceof String) {
+				return (String) result;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 }

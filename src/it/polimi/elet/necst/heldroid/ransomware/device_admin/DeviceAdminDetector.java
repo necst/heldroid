@@ -39,7 +39,7 @@ import org.w3c.dom.Element;
 import it.polimi.elet.necst.heldroid.apk.DecodedPackage;
 import it.polimi.elet.necst.heldroid.ransomware.Globals;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult.Policy;
-import it.polimi.elet.necst.heldroid.ransomware.device_admin.InstructionSimulator2.Node;
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.InstructionSimulator.Node;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
 import it.polimi.elet.necst.heldroid.utils.CFGUtils;
 import it.polimi.elet.necst.heldroid.utils.FileSystem;
@@ -515,13 +515,13 @@ public class DeviceAdminDetector {
 								 * Check if the policy is actually used in the
 								 * code
 								 */
-								boolean used = isPolicyUsed(policy);
+								PolicyUsage usage = isPolicyUsed(policy);
 
 								/*
 								 * If it is not used, remove it from the list of
 								 * used policies
 								 */
-								if (!used) {
+								if (usage == PolicyUsage.NONE) {
 									System.out.printf(
 											"Policy %S is not used. Removing it...\n",
 											policy.name());
@@ -530,6 +530,10 @@ public class DeviceAdminDetector {
 								} else {
 									System.out.printf("Policy %S is used!!\n",
 											policy.name());
+									// Update result accordingly to usage type
+									if (usage == PolicyUsage.REFLECTION) {
+										result.value.setFromReflection(true);
+									}
 								}
 							}
 						}
@@ -589,6 +593,12 @@ public class DeviceAdminDetector {
 	//
 	// return FileSystem.searchRecursively(smaliDirectory, regex);
 	// }
+	
+	private enum PolicyUsage {
+		NONE,
+		METHOD_CALL,
+		REFLECTION
+	}
 
 	/**
 	 * Searches if the policy is used (directly or through reflection).
@@ -599,7 +609,7 @@ public class DeviceAdminDetector {
 	 *         otherwise.
 	 * 
 	 */
-	private boolean isPolicyUsed(final Policy policy) {
+	private PolicyUsage isPolicyUsed(final Policy policy) {
 		if (policy == null) {
 			throw new IllegalArgumentException(
 					"You must provide a valid policy");
@@ -619,14 +629,18 @@ public class DeviceAdminDetector {
 		 * directly or through reflection.
 		 */
 		if (searchRelatedMethod(policy)) {
-			return true;
+			return PolicyUsage.METHOD_CALL;
 		}
 
 		/*
 		 * Otherwise search for reflection usage
 		 */
-		return searchReflection(policy.getRelatedMethods(),
-				RefType.v("android.app.admin.DevicePolicyManager"));
+		if (searchReflection(policy.getRelatedMethods(),
+				RefType.v("android.app.admin.DevicePolicyManager"))) {
+			return PolicyUsage.REFLECTION;
+		}
+		
+		return PolicyUsage.NONE;
 	}
 
 	/**
@@ -872,11 +886,11 @@ public class DeviceAdminDetector {
 						String extractedString = extractString(methodName,
 								constantDeclaration);
 
-						InstructionSimulator2 simulator = new InstructionSimulator2(
+						InstructionSimulator simulator = new InstructionSimulator(
 								mCfg, constantDeclaration,
 								reflectionMethodInvoke);
-						Set<InstructionSimulator2.Node> nodes = simulator.search(
-								new InstructionSimulator2.Node(extractedString,
+						Set<InstructionSimulator.Node> nodes = simulator.search(
+								new InstructionSimulator.Node(extractedString,
 										constantDeclaration),
 								true);
 
@@ -889,11 +903,11 @@ public class DeviceAdminDetector {
 						for (int i = 0; i < ie2.getArgCount(); i++) {
 							Value argument = ie2.getArg(i);
 							if (argument instanceof StringConstant) {
-								InstructionSimulator2 simulator = new InstructionSimulator2(
+								InstructionSimulator simulator = new InstructionSimulator(
 										mCfg, constantDeclaration,
 										reflectionMethodInvoke);
 								Set<Node> nodes = simulator.search(
-										new InstructionSimulator2.Node(
+										new InstructionSimulator.Node(
 												((StringConstant) argument).value,
 												constantDeclaration),
 										true);

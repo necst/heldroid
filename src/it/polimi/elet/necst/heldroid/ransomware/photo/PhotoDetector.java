@@ -38,7 +38,9 @@ public class PhotoDetector {
 
 	protected String[] relatedMethods = {
 			"android.hardware.Camera->takePicture",
-			"android.hardware.camera2.CameraManager->openCamera" };
+			"android.hardware.camera2.CameraManager->openCamera",
+			"getNumberOfCameras",
+			"getCameraInfo"};
 
 	/**
 	 * @param target
@@ -54,20 +56,22 @@ public class PhotoDetector {
 	 * @return
 	 * @throws IllegalStateException
 	 */
-	public Wrapper<Boolean> detect(boolean reuseCfg)
+	public Wrapper<PhotoAdminResult> detect(boolean reuseCfg)
 			throws IllegalStateException {
 		if (mTarget == null)
 			throw new IllegalStateException("Target not set");
 
 		createCfg(reuseCfg);
 
-		boolean result = findCameraMethods();
+		PhotoAdminResult result = findCameraMethods();
 
-		return new Wrapper<Boolean>(Boolean.valueOf(result));
+		System.out.println("Overall result: "+result);
+		return new Wrapper<>(result);
 	}
 
-	protected boolean findCameraMethods() {
-
+	protected PhotoAdminResult findCameraMethods() {
+		PhotoAdminResult result = new PhotoAdminResult();
+		
 		BreadthFirstSearch<Unit> searcher = new BreadthFirstSearch<Unit>(mCfg) {
 
 			@Override
@@ -98,8 +102,10 @@ public class PhotoDetector {
 
 					String composed = sc.getName() + "->" + sm.getName();
 					for (String s : relatedMethods) {
-						if (composed.equals(s))
-							return true;
+						if (composed.equals(s)) {
+							return false;
+//							return true;
+						}
 					}
 				}
 				return false;
@@ -118,16 +124,23 @@ public class PhotoDetector {
 
 		for (Unit start : startPoints) {
 			if (!searcher.search(start, false).isEmpty()) {
-				return true;
+				result.setPhotoDetected(true);
+				return result;
 			}
 		}
-		
+		System.out.println("****** HERE");
 		// If we reach this point, we found no method
 
 		ArrayList<String> relatedMethods = new ArrayList<>();
 		relatedMethods.add("takePicture");
-		RefType enforceTargetType = RefType.v("android.hardware.Camera");
-		return ReflectionSimulator.searchReflection(mCfg, relatedMethods, enforceTargetType);
+		relatedMethods.add("getNumberOfCameras");
+		relatedMethods.add("getCameraInfo");
+		RefType enforceTargetType = null;// RefType.v("android.hardware.Camera");
+		boolean fromReflection = ReflectionSimulator.searchReflection(mCfg, relatedMethods, enforceTargetType);
+		
+		result.setPhotoDetected(fromReflection);
+		result.setFromReflection(fromReflection);
+		return result;
 	}
 
 	protected void createCfg(boolean reuseCfg) {
