@@ -5,3 +5,10 @@ apktool-tmp/
 out/
 examined.txt
 *.iml
+.classpath
+.project
+.gradle
+.settings
+bin
+build
+doc

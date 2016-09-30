@@ -1,0 +1,120 @@
+@attribute 'Contains URL known to be suspicious' {false,true}
+@attribute 'Airpush Included' {false,true}
+@attribute 'Api Call: Landroid/app/Service;->onLowMemory' {false,true}
+@attribute 'Api Call: Landroid/telephony/TelephonyManager;->getSimOperatorName' {false,true}
+@attribute 'Api Call: Landroid/content/Intent;->describeContents' {false,true}
+@attribute 'Api Call: Landroid/provider/Browser;->getAllBookmarks' {false,true}
+@attribute 'Api Call: Landroid/content/pm/PackageManager;->getPreferredActivities' {false,true}
+@attribute 'Api Call: Landroid/os/Parcel;->marshall' {false,true}
+@attribute 'Api Call: Landroid/content/pm/PackageManager;->queryContentProviders' {false,true}
+@attribute 'Api Call: Landroid/telephony/TelephonyManager;->getLine1Number' {false,true}
+@attribute 'Reads phone data at startup' {false,true}
+@attribute 'Api Call: Landroid/telephony/TelephonyManager;->getDeviceId' {false,true}
+@attribute 'Notification Api Call: Landroid/app/NotificationManager;->notify' {false,true}
+@attribute 'Notification Api Call: Landroid/app/Notification;-><init>' {false,true}
+@attribute 'Api Call: Landroid/accounts/AccountManager;->getAccounts' {false,true}
+@attribute 'Number of services' {'\'(-inf-0.349203]\'','\'(0.349203-1.5]\'','\'(1.5-2.5]\'','\'(2.5-inf)\''}
+@attribute 'Api Call: Landroid/content/Context;->startService' {false,true}
+@attribute 'Classes with Ad prefix' {'\'(-inf-0.301579]\'','\'(0.301579-1.5]\'','\'(1.5-3.5]\'','\'(3.5-inf)\''}
+@attribute 'Content: content://calendar' {false,true}
+@attribute 'Content: content://telephony/carriers/preferapn' {false,true}
+@attribute 'Number of receivers' {'\'(-inf-0.5]\'','\'(0.5-1.5]\'','\'(1.5-4.5]\'','\'(4.5-inf)\''}
+@attribute 'URLs Domains differ from Package' {false,true}
+@attribute 'Contains Hardcoded URLs' {false,true}
+@attribute 'Content: content://com.android.calendar' {false,true}
+@attribute 'Harmless Permission: ADD_VOICEMAIL' {false,true}
+@attribute 'Dangerous Permission: MASTER_CLEAR' {false,true}
+@attribute 'Content: content://sms' {false,true}
+@attribute 'Content: content://com.facebook.katana.provider.AttributionIdProvider' {false,true}
+@attribute 'Api Call: Landroid/content/Intent;->setType' {false,true}
+@attribute 'Api Call: Landroid/telephony/TelephonyManager;->getCellLocation' {false,true}
+@attribute 'Average class size' {'\'(-inf-7017.982707]\'','\'(7017.982707-8491.989066]\'','\'(8491.989066-10449.14787]\'','\'(10449.14787-inf)\''}
+@attribute 'Harmless Permission: FORCE_BACK' {false,true}
+@attribute 'Number of classes in main package' {'\'(-inf-0.142842]\'','\'(0.142842-5.5]\'','\'(5.5-21.5]\'','\'(21.5-inf)\''}
+@attribute 'Harmless Permission: INSTALL_SHORTCUT' {false,true}
+@attribute 'Single Package Name' {false,true}
+@attribute 'Dangerous Permission: MOUNT_FORMAT_FILESYSTEM' {false,true}
+@attribute 'Api Call: Landroid/telephony/TelephonyManager;->getSimSerialNumber' {false,true}
+@attribute 'Obsfuscation present' {false,true}
+@attribute 'Can Steal Data: READ_HISTORY_BOOKMARKS' {false,true}
+@attribute 'Dangerous Permission: WRITE_HISTORY_BOOKMARKS' {false,true}
+@attribute 'Harmless Permission: UNINSTALL_SHORTCUT' {false,true}
+@attribute 'Api Call: Landroid/telephony/SmsManager;->sendTextMessage' {false,true}
+@attribute 'Total number of classes' {'\'(-inf-110.5]\'','\'(110.5-324.5]\'','\'(324.5-743.5]\'','\'(743.5-inf)\''}
+@attribute 'Total number of packages' {'\'(-inf-5.5]\'','\'(5.5-17.5]\'','\'(17.5-40.5]\'','\'(40.5-inf)\''}
+@attribute 'Notification Api Call: Landroid/app/Notification$Builder;->setLargeIcon' {false,true}
+@attribute 'Number of files' {'\'(-inf-188.5]\'','\'(188.5-455.5]\'','\'(455.5-1008.5]\'','\'(1008.5-inf)\''}
+@attribute 'Size of apk' {'\'(-inf-417310]\'','\'(417310-1350881]\'','\'(1350881-4016576]\'','\'(4016576-inf)\''}
+@attribute 'Communication: NETWORK_PROVIDER' {false,true}
+@attribute 'Notification Api Call: Landroid/app/Notification$Builder;-><init>' {false,true}
+@attribute 'Number of activities' {'\'(-inf-2.5]\'','\'(2.5-5.5]\'','\'(5.5-11.5]\'','\'(11.5-inf)\''}
+@attribute 'Api Call: Landroid/telephony/cdma/CdmaCellLocation;->getSystemId' {false,true}
+@attribute 'Dangerous Permission: RECEIVE_BOOT_COMPLETED' {false,true}
+@attribute 'Can Steal Data: ACCESS_LOCATION_EXTRA_COMMANDS' {false,true}
+@attribute 'Suspicious Intent Filter: BOOT_COMPLETED' {false,true}
+@attribute 'Communication: ACCESS_NETWORK_STATE' {false,true}
+@attribute 'Api Call: Landroid/content/pm/PackageManager;->getInstalledPackages' {false,true}
+@attribute 'Api Call: Ljavax/crypto/Cipher;->getInstance' {false,true}
+@attribute 'Harmless Permission: SET_ANIMATION_SCALE' {false,true}
+@attribute 'Api Call: Landroid/telephony/TelephonyManager;->getSubscriberId' {false,true}
+@attribute 'Can Steal Data: GET_ACCOUNTS' {false,true}
+@attribute 'Can Steal Data: READ_SOCIAL_STREAM' {false,true}
+@attribute 'Can Steal Data: READ_PHONE_STATE' {false,true}
+@attribute 'Number of images' {'\'(-inf-11.5]\'','\'(11.5-37.5]\'','\'(37.5-122.155363]\'','\'(122.155363-inf)\''}
+@attribute 'Harmless Permission: WRITE_USER_DICTIONARY' {false,true}
+@attribute 'Harmless Permission: READ_USER_DICTIONARY' {false,true}
+@attribute 'Dangerous Permission: WRITE_PROFILE' {false,true}
+@attribute 'Can Steal Data: ACCESS_WIFI_STATE' {false,true}
+@attribute 'Content: content://media' {false,true}
+@attribute 'Harmless Permission: GLOBAL_SEARCH' {false,true}
+@attribute 'Can Steal Data: RECEIVE_MMS' {false,true}
+@attribute 'Communication: NETWORK' {false,true}
+@attribute 'Number of permissions' {'\'(-inf-2.5]\'','\'(2.5-4.5]\'','\'(4.5-8.5]\'','\'(8.5-inf)\''}
+@attribute 'Communication: INTERNET' {false,true}
+@attribute 'Harmless Permission: SET_ALARM' {false,true}
+@attribute 'Can Steal Data: ACCESS_FINE_LOCATION' {false,true}
+@attribute 'Api Call: Landroid/app/ActivityManager;->getRunningServices' {false,true}
+@attribute 'Harmless Permission: SET_TIME_ZONE' {false,true}
+@attribute 'Harmless Permission: SET_TIME' {false,true}
+@attribute 'Can Steal Data: ACCESS_COARSE_LOCATION' {false,true}
+@attribute 'Can Steal Data: DUMP' {false,true}
+@attribute 'Dangerous Permission: CLEAR_APP_USER_DATA' {false,true}
+@attribute 'Harmless Permission: WAKE_LOCK' {false,true}
+@attribute 'Harmless Permission: FLASHLIGHT' {false,true}
+@attribute 'Harmless Permission: VIBRATE' {false,true}
+@attribute 'Communication: WRITE_SOCIAL_STREAM' {false,true}
+@attribute 'Communication: SUBSCRIBED_FEEDS_WRITE' {false,true}
+@attribute 'Dangerous Permission: INJECT_EVENTS' {false,true}
+@attribute 'Communication: WRITE_APN_SETTINGS' {false,true}
+@attribute 'Harmless Permission: EXPAND_STATUS_BAR' {false,true}
+@attribute 'Dangerous Permission: MODIFY_PHONE_STATE' {false,true}
+@attribute 'Api Call: Ljava/lang/ClassLoader;->loadClass' {false,true}
+@attribute 'Dangerous Permission: DELETE_PACKAGES' {false,true}
+@attribute 'Dangerous Permission: CHANGE_COMPONENT_ENABLED_STATE' {false,true}
+@attribute 'Suspicious Intent Filter: PACKAGE_REMOVED' {false,true}
+@attribute 'Dangerous Permission: STATUS_BAR' {false,true}
+@attribute 'Communication: SEND_SMS' {false,true}
+@attribute 'Can Steal Data: READ_SMS' {false,true}
+@attribute 'Can Steal Data: RECEIVE_SMS' {false,true}
+@attribute 'C2M Intent: c2dm.intent.REGISTRATION' {false,true}
+@attribute 'Harmless Permission: WRITE_CONTACTS' {false,true}
+@attribute 'Communication: CHANGE_NETWORK_STATE' {false,true}
+@attribute 'C2M Intent: c2dm.intent.RECEIVE' {false,true}
+@attribute 'C2M Permission: c2dm.permission.RECEIVE' {false,true}
+@attribute 'Dangerous Permission: DELETE_CACHE_FILES' {false,true}
+@attribute 'Api Call: Landroid/content/Intent;->setDataAndType' {false,true}
+@attribute 'Harmless Permission: WRITE_CALENDAR' {false,true}
+@attribute 'Harmless Permission: SET_ORIENTATION' {false,true}
+@attribute 'C2M Permission: C2D_MESSAGE' {false,true}
+@attribute 'Communication: USE_SIP' {false,true}
+@attribute 'Suspicious Intent Filter: PACKAGE_REPLACED' {false,true}
+@attribute 'Suspicious Intent Filter: PACKAGE_ADDED' {false,true}
+@attribute 'Notification Api Call: Landroid/app/Notification$Builder;->setSound' {false,true}
+@attribute 'Harmless Permission: SET_WALLPAPER' {false,true}
+@attribute 'Can Steal Data: READ_CONTACTS' {false,true}
+@attribute 'Dangerous Permission: INSTALL_PACKAGES' {false,true}
+@attribute 'Api Call: Ljava/lang/System;->loadLibrary' {false,true}
+@attribute 'Can Steal Data: READ_CALENDAR' {false,true}
+@attribute 'Dangerous Permission: WRITE_EXTERNAL_STORAGE' {false,true}
+@attribute 'Dangerous Permission: INTERNAL_SYSTEM_WINDOW' {false,true}
+@attribute 'Can Steal Data: DIAGNOSTIC' {false,true}
