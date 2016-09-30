@@ -1,24 +1,41 @@
 package it.polimi.elet.necst.heldroid.ransomware;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.InputStream;
+import java.util.List;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminDetector;
 import it.polimi.elet.necst.heldroid.ransomware.emulation.TrafficScanner;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
+import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.ransomware.locking.AdminLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.locking.DialogLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.locking.DrawOverLockingStrategy;
 import it.polimi.elet.necst.heldroid.ransomware.locking.MultiLockingStrategy;
+import it.polimi.elet.necst.heldroid.ransomware.photo.PhotoDetector;
 import it.polimi.elet.necst.heldroid.ransomware.text.SupportedLanguage;
-import it.polimi.elet.necst.heldroid.ransomware.text.classification.*;
-import it.polimi.elet.necst.heldroid.ransomware.text.scanning.*;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.GenericTextClassifier;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.Segmenter;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.SentenceClassification;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.StopWordList;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassification;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifier;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifierCollection;
+import it.polimi.elet.necst.heldroid.ransomware.text.scanning.AcceptanceStrategy;
+import it.polimi.elet.necst.heldroid.ransomware.text.scanning.HtmlScanner;
+import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
+import it.polimi.elet.necst.heldroid.ransomware.text.scanning.XmlLayoutScanner;
+import it.polimi.elet.necst.heldroid.ransomware.text.scanning.XmlValuesScanner;
 import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
 import opennlp.tools.stemmer.Stemmer;
 import opennlp.tools.stemmer.snowball.SnowballStemmer;
-import org.jnetpcap.protocol.application.Html;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
-import java.util.List;
 
 public class Factory {
     public static EncryptionFlowDetector createEncryptionFlowDetector() throws ParserConfigurationException {
@@ -27,6 +44,15 @@ public class Factory {
         return encryptionFlowDetector;
     }
 
+    public static DeviceAdminDetector createDeviceAdminDetector() throws ParserConfigurationException {
+    	DeviceAdminDetector deviceAdminDetector = new DeviceAdminDetector();
+    	
+    	return deviceAdminDetector;
+    }
+    
+    public static PhotoDetector createPhotoAdminDetector() {
+    	return new PhotoDetector();
+    }
 
     public static TrafficScanner createTrafficScanner() {
         HtmlScanner htmlScanner = new HtmlScanner(createClassifierCollection());
@@ -45,6 +71,13 @@ public class Factory {
         return allLockingStratgies;
     }
 
+    public static ImageScanner createImageScanner() {
+    	TextClassifierCollection textClassifierCollection = createClassifierCollection();
+    	ImageScanner imageScanner = new ImageScanner(textClassifierCollection);
+    	
+    	imageScanner.setAcceptanceStrategy(createAcceptanceStrategy());
+    	return imageScanner;
+    }
 
     public static MultiResourceScanner createResourceScanner() throws ParserConfigurationException {
         TextClassifierCollection textClassifierCollection = createClassifierCollection();
@@ -80,6 +113,7 @@ public class Factory {
                                 textClassification.maxLikelihood("copyright"),
                                 textClassification.maxLikelihood("moneypak")));
 
+                result.setFileClassification(textClassification.getFileClassification());
                 return result;
             }
         };

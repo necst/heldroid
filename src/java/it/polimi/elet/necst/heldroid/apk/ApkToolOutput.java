@@ -6,7 +6,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 class ApkToolOutput implements DecodedPackage {
-    private File classesDex, androidManifest, decodedDirectory, originalApk, smaliDirectory;
+    private File classesDex, androidManifest, decodedDirectory, originalApk, smaliDirectory, resourcesDirectory;
 
     @Override
     public File getClassesDex() {
@@ -27,6 +27,11 @@ class ApkToolOutput implements DecodedPackage {
     public File getOriginalApk() {
         return originalApk;
     }
+    
+    @Override
+    public File getResourcesDirectory() {
+    	return resourcesDirectory;
+    }
 
     @Override
     public File getSmaliDirectory() { return smaliDirectory; }
@@ -42,6 +47,7 @@ class ApkToolOutput implements DecodedPackage {
 
         File dex = new File(mainDirectory, CLASSES_DEX_FILE_NAME);
         File xml = new File(mainDirectory, ANDROID_MANIFEST_FILE_NAME);
+        File res = new File(mainDirectory, RESOURCES_DIRECTORY_NAME);
 
         if (!xml.exists())
             throw new FileNotFoundException(ANDROID_MANIFEST_FILE_NAME +  " is missing!");
@@ -49,5 +55,6 @@ class ApkToolOutput implements DecodedPackage {
         this.classesDex = dex;
         this.androidManifest = xml;
         this.smaliDirectory = new File(mainDirectory, SMALI_DIRECTORY_NAME);
+        this.resourcesDirectory = res;
     }
 }

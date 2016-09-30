@@ -12,3 +12,6 @@ examined.txt
 bin
 build
 doc
+/bin/
+.DS_Store
+**/experiments/**/*.apk

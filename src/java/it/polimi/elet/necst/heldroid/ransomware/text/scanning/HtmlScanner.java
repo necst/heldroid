@@ -1,14 +1,15 @@
 package it.polimi.elet.necst.heldroid.ransomware.text.scanning;
 
-import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassification;
-import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifier;
-import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifierCollection;
-import it.polimi.elet.necst.heldroid.utils.FileSystem;
+import java.io.File;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
-import java.io.File;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassification;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifier;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifierCollection;
+import it.polimi.elet.necst.heldroid.utils.FileSystem;
 
 public class HtmlScanner extends ResourceScanner {
     private static final long MAX_HTML_FILE_SIZE = 100000;
@@ -46,7 +47,11 @@ public class HtmlScanner extends ResourceScanner {
         try {
             Document document = Jsoup.parse(htmlFile, "UTF-8");
             Element body = document.body();
-            return this.classifyElementText(body, TextClassification.empty());
+            TextClassification result = this.classifyElementText(body, TextClassification.empty());
+            
+            extractLikelihood(htmlFile, result);
+            result.setFileClassification(getFileClassification());
+            return result;
         } catch (Exception e) {
             return TextClassification.empty();
         }

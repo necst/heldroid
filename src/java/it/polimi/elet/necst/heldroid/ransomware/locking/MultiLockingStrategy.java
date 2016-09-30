@@ -16,6 +16,7 @@ public class MultiLockingStrategy extends LockingStrategy {
     private SmaliLoader loader;
     private SmaliInspector inspector;
     private SmaliConstantFinder constantFinder;
+	private String successfulStrategy;
 
     public MultiLockingStrategy() {
         this.lockingStrategies = new ArrayList<LockingStrategy>();
@@ -54,9 +55,23 @@ public class MultiLockingStrategy extends LockingStrategy {
     @Override
     protected boolean detectStrategy() {
         for (LockingStrategy strategy : lockingStrategies)
-            if (strategy.detect())
+            if (strategy.detect()) {
+            	this.successfulStrategy = strategy.strategyName();
                 return true;
+            }
 
         return false;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected String strategyName() {
+    	return "MultiLockingStrategy";
+    }
+    
+    public String getSuccessfulStrategy() {
+    	return this.successfulStrategy;
     }
 }

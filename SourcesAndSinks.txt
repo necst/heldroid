@@ -1,6 +1,15 @@
-<android.os.Environment: java.io.File getExternalStorageDirectory()> -> _SOURCE_
+<java.io.File: java.lang.String[] list()> -> _SOURCE_
+<java.io.File: java.lang.String[] list(java.io.FilenameFilter)> -> _SOURCE_
+<java.io.File: java.io.File[] listFiles()> -> _SOURCE_
+<java.io.File: java.io.File[] listFiles(java.io.FilenameFilter)> -> _SOURCE_
+<java.io.File: java.io.File[] listFiles(java.io.FileFilter)> -> _SOURCE_
+<java.lang.Runtime: java.lang.Process exec(java.lang.String[],java.lang.String[])> -> _SOURCE_
+<java.lang.Runtime: java.lang.Process exec(java.lang.String,java.lang.String[],java.io.File)> -> _SOURCE_
+<java.lang.Runtime: java.lang.Process exec(java.lang.String[],java.lang.String[],java.io.File)> -> _SOURCE_
+<java.lang.Runtime: java.lang.Process exec(java.lang.String,java.lang.String[])> -> _SOURCE_
+<java.lang.Runtime: java.lang.Process exec(java.lang.String)> -> _SOURCE_
+<java.lang.Runtime: java.lang.Process exec(java.lang.String[])> -> _SOURCE_
 
-<javax.crypto.CipherOutputStream: void <init>(java.io.OutputStream,javax.crypto.Cipher)> -> _SINK_
 <javax.crypto.Cipher: byte[] doFinal()> -> _SINK_
 <javax.crypto.Cipher: byte[] doFinal(byte[])> -> _SINK_
 <javax.crypto.Cipher: byte[] doFinal(byte[],int,int)> -> _SINK_
@@ -8,3 +17,4 @@
 <javax.crypto.Cipher: int doFinal(byte[],int,int,byte[])> -> _SINK_
 <javax.crypto.Cipher: int doFinal(byte[],int,int,byte[],int)> -> _SINK_
 <javax.crypto.Cipher: int doFinal(java.nio.ByteBuffer,java.nio.ByteBuffer)> -> _SINK_
+<javax.crypto.CipherOutputStream: void <init>(java.io.OutputStream,javax.crypto.Cipher)> -> _SINK_

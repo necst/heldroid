@@ -1,0 +1,125 @@
+@relation 'RapidMinerData-weka.filters.unsupervised.attribute.Remove-R1-weka.filters.unsupervised.attribute.Remove-V-R119,103,48,46,32,44,47,49,3,215,30,29,112,216,111,52,14,27,135,116,98,9,101,163,118,117,136,99,158,125,37,33,7,78,63,124,126,31,16,120,167,35,87,24,166,212,127,181,132,79,123,134,189,65,179,21,130,71,28,57,43,41,131,88,187,171,80,91,25,10,40,73,220,133,62,93,174,56,69,12,70,38,61,183,162,66,182,175,156,147,178,211,11,159,204,180,161,4,51,213,36,184,172,58,199,68,67,23,176,20,164,1,149,22,42,83,13,214,186,5,last'
+
+@attribute 'Contains URL known to be suspicious' {false,true}
+@attribute 'Airpush Included' {false,true}
+@attribute 'Api Call: Landroid/app/Service;->onLowMemory' {false,true}
+@attribute 'Api Call: Landroid/content/Intent;->describeContents' {false,true}
+@attribute 'Api Call: Landroid/telephony/TelephonyManager;->getSimOperatorName' {false,true}
+@attribute 'Api Call: Landroid/provider/Browser;->getAllBookmarks' {false,true}
+@attribute 'Api Call: Landroid/content/pm/PackageManager;->getPreferredActivities' {false,true}
+@attribute 'Api Call: Landroid/os/Parcel;->marshall' {false,true}
+@attribute 'Dangerous Permission: BRICK' {false,true}
+@attribute 'Reads phone data at startup' {false,true}
+@attribute 'Api Call: Landroid/telephony/TelephonyManager;->getLine1Number' {false,true}
+@attribute 'Api Call: Landroid/telephony/TelephonyManager;->getDeviceId' {true,false}
+@attribute 'Notification Api Call: Landroid/app/NotificationManager;->notify' {false,true}
+@attribute 'Sends SMS at startup' {false,true}
+@attribute 'Notification Api Call: Landroid/app/Notification;-><init>' {false,true}
+@attribute 'Api Call: Landroid/accounts/AccountManager;->getAccounts' {false,true}
+@attribute 'Dangerous Permission: MASTER_CLEAR' {false,true}
+@attribute 'Api Call: Landroid/content/Context;->startService' {true,false}
+@attribute 'Number of services' numeric
+@attribute 'Classes with Ad prefix' numeric
+@attribute 'Content: content://mms' {false,true}
+@attribute 'Dangerous Permission: FACTORY_TEST' {false,true}
+@attribute 'Content: content://telephony/carriers/preferapn' {false,true}
+@attribute 'Harmless Permission: FORCE_BACK' {false,true}
+@attribute 'URLs Domains differ from Package' {true,false}
+@attribute 'Contains Hardcoded URLs' {true,false}
+@attribute 'Number of receivers' numeric
+@attribute 'Content: content://sms' {false,true}
+@attribute 'Harmless Permission: ADD_VOICEMAIL' {false,true}
+@attribute 'Number of classes in main package' numeric
+@attribute 'Api Call: Landroid/content/Intent;->setType' {false,true}
+@attribute 'Api Call: Landroid/telephony/TelephonyManager;->getCellLocation' {false,true}
+@attribute 'Dangerous Permission: DELETE_PACKAGES' {false,true}
+@attribute 'Can Steal Data: DIAGNOSTIC' {false,true}
+@attribute 'Communication: SUBSCRIBED_FEEDS_WRITE' {false,true}
+@attribute 'Total number of classes' numeric
+@attribute 'Average class size' numeric
+@attribute 'Api Call: Landroid/telephony/TelephonyManager;->getSimSerialNumber' {false,true}
+@attribute 'Dangerous Permission: MOUNT_FORMAT_FILESYSTEM' {false,true}
+@attribute 'Single Package Name' {false,true}
+@attribute 'Harmless Permission: INSTALL_SHORTCUT' {false,true}
+@attribute 'Api Call: Landroid/telephony/SmsManager;->sendTextMessage' {false,true}
+@attribute 'Can Steal Data: READ_HISTORY_BOOKMARKS' {false,true}
+@attribute 'Dangerous Permission: WRITE_HISTORY_BOOKMARKS' {false,true}
+@attribute 'Harmless Permission: GLOBAL_SEARCH' {false,true}
+@attribute 'Hidden Apk' {false,true}
+@attribute 'Obsfuscation present' {false,true}
+@attribute 'Harmless Permission: UNINSTALL_SHORTCUT' {false,true}
+@attribute 'Number of files' numeric
+@attribute 'Can Steal Data: DUMP' {false,true}
+@attribute 'Total number of packages' numeric
+@attribute 'Number of activities' numeric
+@attribute 'Suspicious Intent Filter: BOOT_COMPLETED' {true,false}
+@attribute 'Communication: NETWORK_PROVIDER' {false,true}
+@attribute 'Harmless Permission: SET_TIME_ZONE' {false,true}
+@attribute 'Dangerous Permission: RECEIVE_BOOT_COMPLETED' {true,false}
+@attribute 'Size of apk' numeric
+@attribute 'Can Steal Data: ACCESS_LOCATION_EXTRA_COMMANDS' {false,true}
+@attribute 'Api Call: Landroid/telephony/TelephonyManager;->getSubscriberId' {true,false}
+@attribute 'Communication: ACCESS_NETWORK_STATE' {true,false}
+@attribute 'Api Call: Ljavax/crypto/Cipher;->getInstance' {false,true}
+@attribute 'Api Call: Landroid/content/pm/PackageManager;->getInstalledPackages' {true,false}
+@attribute 'Number of images' numeric
+@attribute 'Can Steal Data: READ_PHONE_STATE' {true,false}
+@attribute 'Harmless Permission: WRITE_USER_DICTIONARY' {false,true}
+@attribute 'Harmless Permission: READ_USER_DICTIONARY' {false,true}
+@attribute 'Can Steal Data: GET_ACCOUNTS' {false,true}
+@attribute 'Can Steal Data: READ_SOCIAL_STREAM' {false,true}
+@attribute 'Dangerous Permission: WRITE_PROFILE' {false,true}
+@attribute 'Dangerous Permission: INSTALL_PACKAGES' {false,true}
+@attribute 'Api Call: Landroid/app/ActivityManager;->restartPackage' {false,true}
+@attribute 'Can Steal Data: ACCESS_WIFI_STATE' {false,true}
+@attribute 'Accesses a database when receiving SMS' {false,true}
+@attribute 'Number of permissions' numeric
+@attribute 'Communication: NETWORK' {false,true}
+@attribute 'Can Steal Data: RECEIVE_MMS' {false,true}
+@attribute 'Harmless Permission: SET_ALARM' {false,true}
+@attribute 'Communication: INTERNET' {true,false}
+@attribute 'Can Steal Data: ACCESS_FINE_LOCATION' {false,true}
+@attribute 'Dangerous Permission: INTERNAL_SYSTEM_WINDOW' {false,true}
+@attribute 'Can Steal Data: ACCESS_COARSE_LOCATION' {false,true}
+@attribute 'Api Call: Landroid/app/ActivityManager;->getRunningServices' {false,true}
+@attribute 'Communication: WRITE_APN_SETTINGS' {true,false}
+@attribute 'Harmless Permission: WAKE_LOCK' {true,false}
+@attribute 'Harmless Permission: FLASHLIGHT' {false,true}
+@attribute 'Communication: WRITE_SOCIAL_STREAM' {false,true}
+@attribute 'Harmless Permission: VIBRATE' {true,false}
+@attribute 'Harmless Permission: SET_ANIMATION_SCALE' {false,true}
+@attribute 'Harmless Permission: ACCESS_SURFACE_FLINGER' {false,true}
+@attribute 'Calls a System Routine: mount' {false,true}
+@attribute 'Harmless Permission: SET_TIME' {false,true}
+@attribute 'Suspicious Intent Filter: USER_PRESENT' {true,false}
+@attribute 'Dangerous Permission: INJECT_EVENTS' {false,true}
+@attribute 'Harmless Permission: CONTROL_LOCATION_UPDATES' {false,true}
+@attribute 'Suspicious Intent Filter: PACKAGE_REMOVED' {false,true}
+@attribute 'Harmless Permission: SET_WALLPAPER' {false,true}
+@attribute 'Harmless Permission: EXPAND_STATUS_BAR' {false,true}
+@attribute 'Dangerous Permission: CHANGE_COMPONENT_ENABLED_STATE' {false,true}
+@attribute 'Api Call: Ljava/lang/ClassLoader;->loadClass' {false,true}
+@attribute 'Sends SMS to Suspicious Number(s)' {false,true}
+@attribute 'Api Call: Landroid/content/Intent;->setDataAndType' {false,true}
+@attribute 'Harmless Permission: WRITE_CALENDAR' {false,true}
+@attribute 'Harmless Permission: REORDER_TASKS' {false,true}
+@attribute 'Communication: CHANGE_NETWORK_STATE' {false,true}
+@attribute 'Suspicious Intent Filter: PACKAGE_ADDED' {false,true}
+@attribute 'Communication: USE_SIP' {false,true}
+@attribute 'Communication: SEND_SMS' {true,false}
+@attribute 'Dangerous Permission: WRITE_EXTERNAL_STORAGE' {false,true}
+@attribute 'Harmless Permission: SET_ORIENTATION' {false,true}
+@attribute 'Dangerous Permission: REBOOT' {false,true}
+@attribute 'Harmless Permission: GET_PACKAGE_SIZE' {false,true}
+@attribute 'Dangerous Permission: ACCESS_SUPERUSER' {false,true}
+@attribute 'Calls a System Routine: /system' {false,true}
+@attribute 'Dangerous Permission: STATUS_BAR' {false,true}
+@attribute 'Api Call: Ljava/lang/System;->loadLibrary' {true,false}
+@attribute 'Can Steal Data: READ_CALENDAR' {false,true}
+@attribute 'Dangerous Permission: KILL_BACKGROUND_PROCESSES' {false,true}
+@attribute 'Package Domain Exists' {true,false}
+@attribute 'Harmless Permission: WRITE_CONTACTS' {true,false}
+@attribute 'Dangerous Permission: CLEAR_APP_USER_DATA' {false,true}
+@attribute 'Detection Ratio' {Malicious,Benign}
+
+@data

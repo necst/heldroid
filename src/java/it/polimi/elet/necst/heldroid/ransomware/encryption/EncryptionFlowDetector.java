@@ -1,9 +1,12 @@
 package it.polimi.elet.necst.heldroid.ransomware.encryption;
 
-
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -15,147 +18,304 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import heros.TwoElementSet;
 import it.polimi.elet.necst.heldroid.apk.DecodedPackage;
-import it.polimi.elet.necst.heldroid.utils.Logging;
+import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.utils.Wrapper;
 import it.polimi.elet.necst.heldroid.utils.Xml;
-
-import soot.jimple.infoflow.android.AndroidSourceSinkManager;
+import soot.ArrayType;
+import soot.SootClass;
+import soot.SootMethod;
+import soot.jimple.InstanceInvokeExpr;
+import soot.jimple.InvokeExpr;
+import soot.jimple.Stmt;
+import soot.jimple.infoflow.InfoflowManager;
+import soot.jimple.infoflow.android.InfoflowAndroidConfiguration;
 import soot.jimple.infoflow.android.SetupApplication;
+import soot.jimple.infoflow.android.source.AndroidSourceSinkManager.LayoutMatchingMode;
+import soot.jimple.infoflow.data.Abstraction;
+import soot.jimple.infoflow.data.AccessPath;
+import soot.jimple.infoflow.data.AccessPathFactory;
+import soot.jimple.infoflow.data.AccessPath.ArrayTaintType;
 import soot.jimple.infoflow.data.pathBuilders.DefaultPathBuilderFactory;
-import soot.jimple.infoflow.results.InfoflowResults;
+import soot.jimple.infoflow.problems.conditions.ConditionParser;
+import soot.jimple.infoflow.problems.conditions.ConditionSet;
 import soot.jimple.infoflow.taintWrappers.EasyTaintWrapper;
+import soot.jimple.infoflow.taintWrappers.ITaintPropagationWrapper;
+import soot.jimple.infoflow.taintWrappers.TaintWrapperSet;
+import soot.jimple.infoflow.util.SystemClassHandler;
 
 public class EncryptionFlowDetector {
-    private static final String PERMISSION_TAG = "uses-permission";
-    private static final String NAME_ATTRIBUTE = "android:name";
-    private static final String WRITE_EXTERNAL_STORAGE = "android.permission.WRITE_EXTERNAL_STORAGE";
-    private static final String READ_EXTERNAL_STORAGE = "android.permission.READ_EXTERNAL_STORAGE";
+	private static final String PERMISSION_TAG = "uses-permission";
+	private static final String NAME_ATTRIBUTE = "android:name";
+	private static final String WRITE_EXTERNAL_STORAGE = "android.permission.WRITE_EXTERNAL_STORAGE";
 
-    private static final String SOURCE_SINKS_FILE_NAME = "SourcesAndSinks.txt";
-    private static final String TAINT_WRAPPER_FILE_NAME = "EasyTaintWrapperSource.txt";
+	private static final String SOURCE_SINKS_FILE_NAME = "SourcesAndSinks.txt";
+	private static final String TAINT_WRAPPER_FILE_NAME = "EasyTaintWrapperSource.txt";
 
-    private static final int FLOW_TIMEOUT = 20; // seconds
+	private static final int FLOW_TIMEOUT = 220; // seconds
 
-    private DocumentBuilderFactory dbFactory;
-    private DocumentBuilder db;
-    private DecodedPackage target;
-    private File androidPlatformsDir;
+	private DocumentBuilderFactory dbFactory;
+	private DocumentBuilder db;
+	private DecodedPackage target;
+	private File androidPlatformsDir;
 
-    public void setTarget(DecodedPackage target) {
-        this.target = target;
-    }
+	private ConditionSet conditions;
 
-    public void setAndroidPlatformsDir(File androidPlatformsDir) {
-        this.androidPlatformsDir = androidPlatformsDir;
-    }
+	public void setTarget(DecodedPackage target) {
+		this.target = target;
+	}
 
-    public EncryptionFlowDetector() throws ParserConfigurationException {
-        this.dbFactory = DocumentBuilderFactory.newInstance();
-        this.db = dbFactory.newDocumentBuilder();
-    }
+	public void setAndroidPlatformsDir(File androidPlatformsDir) {
+		this.androidPlatformsDir = androidPlatformsDir;
+	}
 
-    private boolean hasRwPermission() {
-        try {
-            Document document = db.parse(target.getAndroidManifest());
-            Element root = document.getDocumentElement();
+	public EncryptionFlowDetector() throws ParserConfigurationException {
+		this.dbFactory = DocumentBuilderFactory.newInstance();
+		this.db = dbFactory.newDocumentBuilder();
 
-            Collection<Element> permissions = Xml.getElementsByTagName(root, PERMISSION_TAG);
-            boolean canWrite = false;
-            boolean canRead = false;
+		try {
+			ConditionParser parser = ConditionParser.fromFile("Conditions.txt");
+			this.conditions = parser.getConditionSet();
+		} catch (IOException e) {
+			System.err.println("Cannot parse file: Conditions.txt");
+			this.conditions = null;
+		}
+	}
 
-            for (Element permission : permissions) {
-                if (!permission.hasAttribute(NAME_ATTRIBUTE))
-                    continue;
+	private boolean hasRwPermission() {
+		try {
+			Document document = db.parse(target.getAndroidManifest());
+			Element root = document.getDocumentElement();
 
-                String name = permission.getAttribute(NAME_ATTRIBUTE);
+			Collection<Element> permissions = Xml.getElementsByTagName(root,
+					PERMISSION_TAG);
+			boolean canWrite = false;
 
-                if (name.equals(WRITE_EXTERNAL_STORAGE))
-                    canWrite = true;
-                else if (name.equals(READ_EXTERNAL_STORAGE))
-                    canRead = true;
+			for (Element permission : permissions) {
+				if (!permission.hasAttribute(NAME_ATTRIBUTE))
+					continue;
 
-                if (canRead && canWrite)
-                    return true;
-            }
+				String name = permission.getAttribute(NAME_ATTRIBUTE);
 
-            return false;
-        } catch (Exception e) {
-            return true;
-        }
-    }
+				if (name.equals(WRITE_EXTERNAL_STORAGE))
+					canWrite = true;
 
-    public boolean detect() {
-        if (target == null)
-            throw new NullPointerException("Target not set!");
+				/*
+				 * Any app that declares the WRITE_EXTERNAL_STORAGE permission
+				 * is implicitly granted READ_EXTERNAL_STORAGE permission. So
+				 * there's no need to check READ_EXTERNAL_STORAGE permission.
+				 */
+				// if (canRead && canWrite)
+				if (canWrite) {
+					return true;
+				}
+			}
 
-        if (androidPlatformsDir == null)
-            throw new NullPointerException("Android platforms dir not set!");
+			return false;
+		} catch (Exception e) {
+			// If we cannot parse the manifest, we assume that the sample has RW
+			// permission
+			return true;
+		}
+	}
 
-        if (!this.hasRwPermission())
-            return false;
+	public Wrapper<EncryptionResult> detect() {
+		if (target == null)
+			throw new NullPointerException("Target not set!");
 
+		if (androidPlatformsDir == null)
+			throw new NullPointerException("Android platforms dir not set!");
 
-        final Wrapper<InfoflowResults> res = new Wrapper<InfoflowResults>(null);
+		final Wrapper<EncryptionResult> result = new Wrapper<>(
+				new EncryptionResult());
+		result.value.setWritable(this.hasRwPermission());
 
-        Logging.suppressAll();
+		if (!this.hasRwPermission()) {
+			System.out.println("APK has no RW permission");
+			// return false;
+			return result;
+		}
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+		// final Wrapper<InfoflowResults> res = new
+		// Wrapper<InfoflowResults>(null);
 
-        executor.submit(new Runnable() {
-            @Override
-            public void run() {
-                SetupApplication app;
+		// Logging.suppressAll();
 
-                try {
-                    app = initAnalysis();
-                    if (res != null)
-                        res.value = app.runInfoflow();
-                } catch (Throwable e) { }
-            }
-        });
-        executor.shutdown();
+		ExecutorService executor = Executors.newSingleThreadExecutor();
 
-        try {
-            if (!executor.awaitTermination(FLOW_TIMEOUT, TimeUnit.SECONDS))
-                executor.shutdownNow();
-        } catch (InterruptedException e) { }
+		executor.submit(new Runnable() {
+			@Override
+			public void run() {
+				SetupApplication app;
 
-        Logging.restoreAll();
+				try {
+					app = initAnalysis();
+					// if (res != null)
+					// res.value = app.runInfoflow();
+					if (result != null && result.value != null) {
+						result.value.setInfoFlowResults(app.runInfoflow());
+					}
+				} catch (Throwable e) {
+					e.printStackTrace();
+					result.value.setTimedout(true);
+				}
+			}
+		});
 
-        return (res.value != null) && (res.value.getResults().size() > 0);
-    }
+		executor.shutdown();
 
-    private SetupApplication initAnalysis() {
-        SetupApplication app = new SetupApplication(androidPlatformsDir.getAbsolutePath(), target.getOriginalApk().getAbsolutePath() );
-        app.setStopAfterFirstFlow(true);
-        app.setEnableImplicitFlows(false);
-        app.setEnableStaticFieldTracking(true);
-        app.setEnableCallbacks(true);
-        app.setEnableExceptionTracking(true);
-        app.setAccessPathLength(5);
-        app.setLayoutMatchingMode(AndroidSourceSinkManager.LayoutMatchingMode.MatchSensitiveOnly);
-        app.setFlowSensitiveAliasing(true);
-        app.setPathBuilder(DefaultPathBuilderFactory.PathBuilder.ContextInsensitiveSourceFinder);
-        app.setComputeResultPaths(true);
+		try {
+			if (!executor.awaitTermination(FLOW_TIMEOUT, TimeUnit.SECONDS)) {
+				executor.shutdownNow();
+				result.value.setTimedout(true);
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			result.value.setTimedout(true);
+		}
+		// Logging.restoreAll();
 
-        EasyTaintWrapper easyTaintWrapper = null;
+		// boolean result = (res.value != null) &&
+		// (res.value.getResults().size() > 0);
+		return result;
+	}
 
-        try {
-            easyTaintWrapper = new EasyTaintWrapper(TAINT_WRAPPER_FILE_NAME);
-        } catch (IOException e) { }
+	private SetupApplication initAnalysis() {
+//		SetupApplication app = new SetupApplication(
+//				androidPlatformsDir.getAbsolutePath(), target	.getOriginalApk()
+//																.getAbsolutePath());
+		 String androidJar = new File(androidPlatformsDir,
+		 "android-23/android.jar").getAbsolutePath();
+		 SetupApplication app = new SetupApplication(androidJar,
+		 target.getOriginalApk().getAbsolutePath());
+		InfoflowAndroidConfiguration config = app.getConfig();
 
-        easyTaintWrapper.setAggressiveMode(false);
-        app.setTaintWrapper(easyTaintWrapper);
+		InfoflowAndroidConfiguration.setMergeNeighbors(false);
+		InfoflowAndroidConfiguration.setPathAgnosticResults(false);
+		InfoflowAndroidConfiguration.setOneResultPerAccessPath(true);
 
-        try {
-            app.calculateSourcesSinksEntrypoints(SOURCE_SINKS_FILE_NAME);
-        } catch (Exception e) { }
+		config.setStopAfterFirstFlow(true);
+		config.setEnableImplicitFlows(false);
+		config.setEnableStaticFieldTracking(true);
+		config.setEnableCallbacks(true);
+		// Callbacks are not sources
+		config.setEnableCallbackSources(false);
+		config.setEnableExceptionTracking(false);
+		config.setLayoutMatchingMode(LayoutMatchingMode.NoMatch);
+		config.setFlowSensitiveAliasing(true);
+		config.setPathBuilder(
+				DefaultPathBuilderFactory.PathBuilder.ContextSensitive);
+		config.setComputeResultPaths(true);
+		config.setMaxThreadNum(-1);
 
-        return app;
-    }
+		// ForwardCFGNavigator navigator = new ForwardCFGNavigator();
+		// navigator.setLoggingEnabled(false);
+		// navigator.setIgnoreExceptions(false);
+		// navigator.setIgnoreFlowsInSystemPackages(true);
+		// config.setCFGNavigator(navigator);
 
-    public interface FlowResultHandler {
-        void onResult(boolean found);
-    }
+		config.setConditions(conditions);
+//		config.setConditionFilename("Conditions.txt");
+
+		EasyTaintWrapper easyTaintWrapper = null;
+		TaintWrapperSet taintSet = new TaintWrapperSet();
+
+		try {
+			easyTaintWrapper = new EasyTaintWrapper(TAINT_WRAPPER_FILE_NAME);
+			taintSet.addWrapper(easyTaintWrapper);
+		} catch (IOException e) {
+		}
+
+		taintSet.addWrapper(new ITaintPropagationWrapper() {
+
+			@Override
+			public boolean supportsCallee(Stmt callSite) {
+				if (callSite.containsFieldRef()) {
+					InvokeExpr ie = callSite.getInvokeExpr();
+					return this.supportsCallee(ie.getMethod());
+				}
+				return false;
+			}
+
+			@Override
+			public boolean supportsCallee(SootMethod method) {
+				SootClass sootClass = method.getDeclaringClass();
+				boolean isInputStream = sootClass.getName().equals(InputStream.class.getName());
+				while (!isInputStream && sootClass.hasSuperclass()) {
+					sootClass = sootClass.getSuperclass();
+					sootClass.getName().equals(InputStream.class.getName());
+				}
+				return (isInputStream && method	.getName()
+								.equals("read"));
+			}
+
+			@Override
+			public boolean isExclusive(Stmt stmt, Abstraction taintedPath) {
+				return false;
+			}
+
+			@Override
+			public void initialize(InfoflowManager manager) {
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public int getWrapperMisses() {
+				return 0;
+			}
+
+			@Override
+			public int getWrapperHits() {
+				return 0;
+			}
+
+			@Override
+			public Set<Abstraction> getTaintsForMethod(Stmt stmt,
+					Abstraction d1, Abstraction taintedPath) {
+				if (!stmt.containsInvokeExpr()) {
+					return null;
+				}
+				
+				Set<Abstraction> result = new HashSet<>();
+				final SootMethod method = stmt.getInvokeExpr().getMethod();
+				final InvokeExpr ie = stmt.getInvokeExpr();
+				if (!taintedPath.getAccessPath().isEmpty()) {
+					if (method.getName().equals("read") && ie.getArgCount() >= 1) {
+						result.add(d1.deriveNewAbstraction(ie.getArg(0), false, stmt, ie.getArg(0).getType(), ArrayTaintType.ContentsAndLength));
+					} else if (ie instanceof InstanceInvokeExpr && method.getName().equals("update")) {
+						result.add(d1.deriveNewAbstraction(AccessPathFactory.v().createAccessPath(((InstanceInvokeExpr) ie).getBase(), true), stmt));
+					}	
+				}
+				
+				if (result.isEmpty()) {
+					return null;
+				}
+				
+				return result;
+			}
+
+			@Override
+			public Set<Abstraction> getAliasesForMethod(Stmt stmt,
+					Abstraction d1, Abstraction taintedPath) {
+				return null;
+			}
+		});
+
+		easyTaintWrapper.setAggressiveMode(false);
+		// app.setTaintWrapper(easyTaintWrapper);
+		app.setTaintWrapper(taintSet);
+
+		try {
+			app.calculateSourcesSinksEntrypoints(SOURCE_SINKS_FILE_NAME);
+		} catch (Exception e) {
+		}
+
+		return app;
+	}
+
+	public interface FlowResultHandler {
+		void onResult(boolean found);
+	}
 }

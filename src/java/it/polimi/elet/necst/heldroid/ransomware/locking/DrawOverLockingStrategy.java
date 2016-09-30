@@ -180,4 +180,12 @@ public class DrawOverLockingStrategy extends SmaliLockingStrategy {
 
         return navigationSuppressed.value;
     }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected String strategyName() {
+    	return "DrawOver";
+    }
 }

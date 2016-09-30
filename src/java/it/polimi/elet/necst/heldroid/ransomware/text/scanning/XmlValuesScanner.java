@@ -65,10 +65,14 @@ public class XmlValuesScanner extends ResourceScanner {
     }
 
     protected TextClassification findRansomwareText(File stringValuesFile, TextClassifier knownClassifier) {
-        try {
+    	try {
             Document document = db.parse(stringValuesFile);
             Element root = document.getDocumentElement();
-            return this.classifyElementText(root, knownClassifier);
+            TextClassification result = this.classifyElementText(root, knownClassifier);   
+            
+            extractLikelihood(stringValuesFile, result);
+            result.setFileClassification(getFileClassification());
+            return result;
         } catch (Exception e) {
             return TextClassification.empty();
         }

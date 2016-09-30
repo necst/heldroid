@@ -131,4 +131,12 @@ public class AdminLockingStrategy extends SmaliLockingStrategy {
 
         return result[0];
     }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected String strategyName() {
+    	return "DeviceAdmin";
+    }
 }

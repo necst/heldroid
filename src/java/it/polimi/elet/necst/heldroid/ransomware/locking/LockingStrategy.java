@@ -30,4 +30,6 @@ public abstract class LockingStrategy {
     }
 
     protected abstract boolean detectStrategy();
+    
+    protected abstract String strategyName();
 }

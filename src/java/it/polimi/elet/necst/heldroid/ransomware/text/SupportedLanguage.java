@@ -3,11 +3,11 @@ package it.polimi.elet.necst.heldroid.ransomware.text;
 import opennlp.tools.stemmer.snowball.SnowballStemmer;
 
 public enum SupportedLanguage {
-    ENGLISH("english", "en", SnowballStemmer.ALGORITHM.ENGLISH),
-    RUSSIAN("russian", "ru", SnowballStemmer.ALGORITHM.RUSSIAN),
-    SPANISH("spanish", "es", SnowballStemmer.ALGORITHM.SPANISH);
+    ENGLISH("english", "en", "eng", SnowballStemmer.ALGORITHM.ENGLISH),
+    RUSSIAN("russian", "ru", "rus", SnowballStemmer.ALGORITHM.RUSSIAN),
+    SPANISH("spanish", "es", "spa", SnowballStemmer.ALGORITHM.SPANISH);
 
-    private String name, code;
+    private String name, code, iso3code;
     private SnowballStemmer.ALGORITHM stemmerAlgorithm;
 
     public String getName() {
@@ -17,14 +17,19 @@ public enum SupportedLanguage {
     public String getCode() {
         return code;
     }
+    
+    public String getIso3code() {
+		return iso3code;
+	}
 
     public SnowballStemmer.ALGORITHM getStemmerAlgorithm() {
         return stemmerAlgorithm;
     }
 
-    SupportedLanguage(String name, String code, SnowballStemmer.ALGORITHM stemmerAlgorithm) {
+    SupportedLanguage(String name, String code, String iso3code, SnowballStemmer.ALGORITHM stemmerAlgorithm) {
         this.name = name;
         this.code = code;
+        this.iso3code = iso3code;
         this.stemmerAlgorithm = stemmerAlgorithm;
     }
 

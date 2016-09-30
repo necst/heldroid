@@ -82,4 +82,12 @@ public class DialogLockingStrategy extends SmaliLockingStrategy {
 
         return isUncancelable.value && showWhenLocked.value;
     }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected String strategyName() {
+    	return "Dialog";
+    }
 }

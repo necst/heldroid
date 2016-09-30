@@ -47,7 +47,11 @@ public class XmlLayoutScanner extends ResourceScanner {
             Document document = db.parse(xmlLayout);
             Element root = document.getDocumentElement();
 
-            return this.classifyElementText(root, TextClassification.empty());
+            TextClassification result = this.classifyElementText(root, TextClassification.empty());
+            
+            extractLikelihood(xmlLayout, result);
+            result.setFileClassification(getFileClassification());
+            return result;
         } catch (Exception e) {
             return TextClassification.empty();
         }

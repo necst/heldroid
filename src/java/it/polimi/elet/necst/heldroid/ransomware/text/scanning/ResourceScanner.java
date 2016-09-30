@@ -1,13 +1,5 @@
 package it.polimi.elet.necst.heldroid.ransomware.text.scanning;
 
-import com.cybozu.labs.langdetect.Detector;
-import com.cybozu.labs.langdetect.DetectorFactory;
-import com.cybozu.labs.langdetect.LangDetectException;
-import it.polimi.elet.necst.heldroid.ransomware.text.SupportedLanguage;
-import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassification;
-import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifier;
-import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifierCollection;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
@@ -17,125 +9,195 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.cybozu.labs.langdetect.Detector;
+import com.cybozu.labs.langdetect.DetectorFactory;
+import com.cybozu.labs.langdetect.LangDetectException;
+
+import it.polimi.elet.necst.heldroid.ransomware.text.FileClassification;
+import it.polimi.elet.necst.heldroid.ransomware.text.SupportedLanguage;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassification;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifier;
+import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifierCollection;
+
 public abstract class ResourceScanner {
-    private static final Pattern RES_VALUE_PATTERN = Pattern.compile("\\@\\w+\\/[\\w_]+");
-    private static final int MIN_STRING_LENGTH = 30;
+	private static final Pattern RES_VALUE_PATTERN = Pattern.compile(
+			"\\@\\w+\\/[\\w_]+");
+	private static final int MIN_STRING_LENGTH = 30;
 
-    protected TextClassifierCollection textClassifierCollection;
-    protected File unpackedApkDirectory;
-    protected AcceptanceStrategy acceptanceStrategy;
-    protected TextClassification textClassification;
+	protected TextClassifierCollection textClassifierCollection;
+	protected File unpackedApkDirectory;
+	protected AcceptanceStrategy acceptanceStrategy;
+	protected TextClassification textClassification;
 
-    private Set<String> encounteredLanguages;
-    private int totalSentences;
+	protected FileClassification fileClassification = new FileClassification();
 
+	private Set<SupportedLanguage> encounteredLanguages;
+	private int totalSentences;
 
-    protected File getApkResourceDirectory() {
-        return new File(unpackedApkDirectory, "res");
-    }
+	protected File getApkResourceDirectory() {
+		return new File(unpackedApkDirectory, "res");
+	}
 
-    protected List<File> getApkResourceDirectories(final String prefix) {
-        File res = this.getApkResourceDirectory();
-        List<File> result = new ArrayList<File>();
+	protected List<File> getApkResourceDirectories(final String prefix) {
+		File res = this.getApkResourceDirectory();
+		List<File> result = new ArrayList<File>();
 
-        File[] matchedFiles = res.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.toLowerCase().startsWith(prefix.toLowerCase());
-            }
-        });
+		File[] matchedFiles = res.listFiles(new FilenameFilter() {
+			@Override
+			public boolean accept(File dir, String name) {
+				return name	.toLowerCase()
+							.startsWith(prefix.toLowerCase());
+			}
+		});
 
-        if (matchedFiles != null) {
-            for (File file : matchedFiles)
-                if (file.isDirectory())
-                    result.add(file);
-        }
+		if (matchedFiles != null) {
+			for (File file : matchedFiles)
+				if (file.isDirectory())
+					result.add(file);
+		}
 
-        return result;
-    }
+		return result;
+	}
 
-    public void setUnpackedApkDirectory(File unpackedApkDirectory) {
-        this.unpackedApkDirectory = unpackedApkDirectory;
-    }
+	public void setUnpackedApkDirectory(File unpackedApkDirectory) {
+		this.unpackedApkDirectory = unpackedApkDirectory;
+	}
 
-    public void setAcceptanceStrategy(AcceptanceStrategy acceptanceStrategy) {
-        this.acceptanceStrategy = acceptanceStrategy;
-    }
+	public void setAcceptanceStrategy(AcceptanceStrategy acceptanceStrategy) {
+		this.acceptanceStrategy = acceptanceStrategy;
+	}
 
+	public FileClassification getFileClassification() {
+		return fileClassification;
+	}
 
-    public ResourceScanner(TextClassifierCollection textClassifierCollection) {
-        this.textClassifierCollection = textClassifierCollection;
-        this.resetStatistics();
-    }
+	public void extractLikelihood(String fileName,
+			TextClassification classification) {
 
+		if (fileName == null) {
+			throw new IllegalArgumentException("File shouldn't be null");
+		}
 
-    public AcceptanceStrategy.Result evaluate() {
-        if (unpackedApkDirectory == null || !unpackedApkDirectory.exists())
-            throw new NullPointerException("UnpackedApkDirectory not set!");
+		if (classification == null) {
+			throw new IllegalArgumentException(
+					"Classification shouldn't be null");
+		}
 
-        if (acceptanceStrategy == null)
-            throw new NullPointerException("AcceptanceStrategy not set!");
+		for (String category : FileClassification.CATEGORIES) {
+			double score = classification.maxLikelihood(category);
+			if (score > 0d) {
+				fileClassification.addFile(category, fileName);
+			}
+		}
+	}
 
-        this.resetStatistics();
+	public void extractLikelihood(File file,
+			TextClassification classification) {
+		if (file == null) {
+			throw new IllegalArgumentException("File shouldn't be null");
+		}
 
-        this.textClassification = this.findRansomwareText();
+		String fullPath = file.getAbsolutePath();
 
-        return acceptanceStrategy.accepts(this.textClassification);
-    }
+		// use relative path, if possible
+		Matcher matcher = Pattern	.compile(".*\\.apk\\/(.+)")
+									.matcher(fullPath);
 
-    protected abstract TextClassification findRansomwareText();
+		this.extractLikelihood(matcher.matches() ? matcher.group(1) : fullPath,
+				classification);
+	}
 
+	public ResourceScanner(TextClassifierCollection textClassifierCollection) {
+		this.textClassifierCollection = textClassifierCollection;
+		this.resetStatistics();
+	}
 
-    private void resetStatistics() {
-        this.encounteredLanguages = new HashSet<String>();
-        this.totalSentences = 0;
-    }
+	public AcceptanceStrategy.Result evaluate() {
+		if (unpackedApkDirectory == null || !unpackedApkDirectory.exists())
+			throw new NullPointerException("UnpackedApkDirectory not set!");
 
+		if (acceptanceStrategy == null)
+			throw new NullPointerException("AcceptanceStrategy not set!");
 
-    protected SupportedLanguage languageOf(String text) {
-        try {
-            Detector detector = DetectorFactory.create();
-            detector.append(text);
-            String languageCode = detector.detect();
-            return SupportedLanguage.fromCode(languageCode);
-        } catch (LangDetectException e) {
-            return null;
-        }
-    }
+		this.resetStatistics();
 
-    protected boolean isSuitableForClassification(String text) {
-        if ((text == null) || (text.length() < MIN_STRING_LENGTH))
-            return false;
+		this.textClassification = this.findRansomwareText();
 
-        Matcher matcher = RES_VALUE_PATTERN.matcher(text);
+		return acceptanceStrategy.accepts(this.textClassification);
+	}
 
-        return !matcher.matches();
-    }
+	protected abstract TextClassification findRansomwareText();
 
-    protected TextClassifier getTextClassifierFor(String text) {
-        SupportedLanguage language = languageOf(text);
+	private void resetStatistics() {
+		this.encounteredLanguages = new HashSet<>();
+		this.totalSentences = 0;
+	}
 
-        if (language == null)
-            return null;
+	protected SupportedLanguage languageOf(String text) {
+		try {
+			Detector detector = DetectorFactory.create();
+			detector.append(text);
+			String languageCode = detector.detect();
+			return SupportedLanguage.fromCode(languageCode);
+		} catch (LangDetectException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 
-        this.totalSentences++;
-        this.encounteredLanguages.add(language.getName());
+	protected boolean isSuitableForClassification(String text) {
+		if ((text == null) || (text.length() < MIN_STRING_LENGTH))
+			return false;
 
-        return textClassifierCollection.get(language);
-    }
+		Matcher matcher = RES_VALUE_PATTERN.matcher(text);
 
-    public String getScanReport() {
-        StringBuilder builder = new StringBuilder();
+		return !matcher.matches();
+	}
 
-        if (this.encounteredLanguages.size() > 0) {
-            builder.append("Languages: ");
-            for (String lang : this.encounteredLanguages)
-                builder.append(lang.toUpperCase() + ", ");
-        }
+	protected TextClassifier getTextClassifierFor(String text) {
+		SupportedLanguage language = languageOf(text);
 
-        builder.append("Analyzed sentences: ");
-        builder.append(String.format("%d", this.totalSentences));
+		if (language == null)
+			return null;
 
-        return builder.toString();
-    }
+		this.totalSentences++;
+		this.encounteredLanguages.add(language);
+
+		return textClassifierCollection.get(language);
+	}
+
+	/**
+	 * Returns all the languages encountered by this scanner. Note that this
+	 * result is built from {@link ResourceScanner#getEncounteredLanguagesRaw()}
+	 * , so if you modify the set returned by this method, the modifications
+	 * will not be applied to the scanner.
+	 * 
+	 * @return
+	 */
+	public Set<String> getEncounteredLanguages() {
+		Set<String> result = new HashSet<>();
+		for (SupportedLanguage lang : encounteredLanguages) {
+			result.add(lang.getName());
+		}
+		return result;
+	}
+
+	public Set<SupportedLanguage> getEncounteredLanguagesRaw() {
+		return this.encounteredLanguages;
+	}
+
+	public String getScanReport() {
+		StringBuilder builder = new StringBuilder();
+		Set<String> encounteredLanguages = this.getEncounteredLanguages();
+		if (encounteredLanguages.size() > 0) {
+			builder.append("Languages: ");
+			for (String lang : encounteredLanguages)
+				builder.append(lang.toUpperCase() + ", ");
+		}
+
+		builder.append("Analyzed sentences: ");
+		builder.append(String.format("%d", this.totalSentences));
+
+		return builder.toString();
+	}
 }
