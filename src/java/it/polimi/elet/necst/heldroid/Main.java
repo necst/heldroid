@@ -1,6 +1,5 @@
 package it.polimi.elet.necst.heldroid;
 
-import java.io.File;
 import java.util.Arrays;
 
 public class Main {
@@ -26,15 +25,7 @@ public class Main {
     }
 
     private static void printUsage() {
-        String jarName =
-            new File(Main.class.getProtectionDomain()
-                .getCodeSource()
-                .getLocation()
-                .getPath())
-                .getName();
-
-        System.out.println("Usage: ");
-        System.out.println("java -jar " + jarName + ".jar (filter|detector) [options]");
-        System.out.println("options depend on the mode of use of heldroid");
+        System.out.println("bin/heldroid (filter|detector) [options]");
+        System.out.println("options depend on the command invoked");
     }
 }

@@ -25,7 +25,6 @@ import soot.jimple.infoflow.android.SetupApplication;
 import soot.jimple.infoflow.data.pathBuilders.DefaultPathBuilderFactory;
 import soot.jimple.infoflow.results.InfoflowResults;
 import soot.jimple.infoflow.taintWrappers.EasyTaintWrapper;
-import soot.util.MultiMap;
 
 public class EncryptionFlowDetector {
     private static final String PERMISSION_TAG = "uses-permission";
@@ -116,7 +115,7 @@ public class EncryptionFlowDetector {
             }
         });
         executor.shutdown();
-        
+
         try {
             if (!executor.awaitTermination(FLOW_TIMEOUT, TimeUnit.SECONDS))
                 executor.shutdownNow();
@@ -124,7 +123,7 @@ public class EncryptionFlowDetector {
 
         Logging.restoreAll();
 
-        return (res.value != null) && (((MultiMap)(res.value.getResults())).size() > 0);
+        return (res.value != null) && (res.value.getResults().size() > 0);
     }
 
     private SetupApplication initAnalysis() {
