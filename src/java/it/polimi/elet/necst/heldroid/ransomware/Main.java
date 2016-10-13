@@ -28,7 +28,9 @@ import opennlp.tools.util.PlainTextByLineStream;
 import opennlp.tools.util.TrainingParameters;
 
 public class Main {
-    public static void main(String args[]) throws IOException, ParserConfigurationException, DecodingException, LangDetectException, InterruptedException {
+    public static void main(String args[])
+      throws IOException, ParserConfigurationException, DecodingException, LangDetectException, InterruptedException {
+
         if (args.length < 1) {
             printUsage();
             return;
@@ -62,12 +64,30 @@ public class Main {
                 .getName();
 
         System.out.println(
-            "java -jar " + jarName + " op args\n" +
-            "With op = (scan|pcap|learn):\n" +
-            "    scan <directory> <output.csv> <json_result_directory>: scan all apks in the specified directory and its subdirectories. Save JSON data in <json_result_directory>\n" +
-            "    pcap directory: analyzes all pcaps in the second-level subdirectories of the specified directory\n" +
-            "    learn lang text: learns a sentence detector model for language lang analyzing sentences\n" +
-            "        from the given text file, one per line"
+            "java -jar " + jarName + " (server|scan|pcap|learn) [[args]]\n" +
+            "\n" +
+            "    server <conf_dir> <watch_folder>:\n" +
+            "       Scan any new APK file popping up in the <watch_folder> and spin up a webserver\n" +
+            "       The <conf_dir> must contain:\n" +
+            "         - AndroidCallbacks.txt\n" +
+            "         - Conditions.txt\n" +
+            "         - EasyTaintWrapperSource.txt\n" +
+            "         - SourcesAndSinks.txt\n" +
+            "\n" +
+            "    scan <conf_dir> <directory> <output.csv> <json_result_directory>:\n" +
+            "       Scan all *.apk in directory (recursively). Save JSON data in <json_result_directory>.\n" +
+            "       The <conf_dir> must contain:\n" +
+            "         - AndroidCallbacks.txt\n" +
+            "         - Conditions.txt\n" +
+            "         - EasyTaintWrapperSource.txt\n" +
+            "         - SourcesAndSinks.txt\n" +
+            "\n" +
+            "    pcap <directory>:\n" +
+            "       Analyzes network-dump.pcap in the second-level subdirectories of the specified directory\n" +
+            "\n" +
+            "    learn <lang> <textfile>:\n" +
+            "       learns a sentence detector model for language lang analyzing sentences\n" +
+            "       from the given text file, one per line"
         );
     }
 

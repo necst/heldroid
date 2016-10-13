@@ -47,8 +47,9 @@ public class MainScannerSequential {
 
 	public static void main(String[] args) throws ParserConfigurationException,
 			IOException, InterruptedException {
-		final File target = new File(args[1]);
-		final File result = new File(args[2]);
+		final File confDir = new File(args[1]);
+		final File target = new File(args[2]);
+		final File result = new File(args[3]);
 		MainScannerSequential.jsonDirectory = new File(args[3]);
 		final Options options = new Options(args);
 
@@ -61,7 +62,7 @@ public class MainScannerSequential {
 		multiLockingStrategy = Factory.createLockingStrategy();
 		multiResourceScanner = Factory.createResourceScanner();
 		imageScanner = Factory.createImageScanner();
-		encryptionFlowDetector = Factory.createEncryptionFlowDetector();
+		encryptionFlowDetector = Factory.createEncryptionFlowDetector(confDir);
 		deviceAdminDetector = Factory.createDeviceAdminDetector();
 
 		examinedFiles = new PersistentFileList(

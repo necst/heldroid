@@ -31,6 +31,7 @@ import it.polimi.elet.necst.heldroid.ransomware.text.scanning.HtmlScanner;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScanner;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.XmlLayoutScanner;
 import it.polimi.elet.necst.heldroid.ransomware.text.scanning.XmlValuesScanner;
+
 import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
@@ -38,13 +39,17 @@ import opennlp.tools.stemmer.Stemmer;
 import opennlp.tools.stemmer.snowball.SnowballStemmer;
 
 public class Factory {
-    public static EncryptionFlowDetector createEncryptionFlowDetector() throws ParserConfigurationException {
-        EncryptionFlowDetector encryptionFlowDetector = new EncryptionFlowDetector();
+    public static EncryptionFlowDetector createEncryptionFlowDetector(File confDir)
+      throws ParserConfigurationException {
+
+        EncryptionFlowDetector encryptionFlowDetector = new EncryptionFlowDetector(confDir);
+
         encryptionFlowDetector.setAndroidPlatformsDir(Globals.ANDROID_PLATFORMS_DIRECTORY);
         return encryptionFlowDetector;
     }
 
-    public static DeviceAdminDetector createDeviceAdminDetector() throws ParserConfigurationException {
+    public static DeviceAdminDetector createDeviceAdminDetector()
+      throws ParserConfigurationException {
     	DeviceAdminDetector deviceAdminDetector = new DeviceAdminDetector();
     	
     	return deviceAdminDetector;

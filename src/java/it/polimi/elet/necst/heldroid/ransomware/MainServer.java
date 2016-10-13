@@ -41,6 +41,7 @@ import it.polimi.elet.necst.heldroid.ransomware.text.scanning.MultiResourceScann
 import it.polimi.elet.necst.heldroid.utils.CollectionToJsonConverter;
 import it.polimi.elet.necst.heldroid.utils.FileSystem;
 import it.polimi.elet.necst.heldroid.utils.MixedInputStream;
+
 import soot.jimple.infoflow.results.InfoflowResults;
 
 public class MainServer implements Runnable {
@@ -58,13 +59,16 @@ public class MainServer implements Runnable {
 	private File uploadDirectory;
 	private File hashDirectory;
 
-	public static void main(String[] args) throws ParserConfigurationException {
-		File target = new File(args[1]);
-		MainServer server = new MainServer(target);
+	public static void main(String[] args)
+    throws ParserConfigurationException {
+
+		File confDir = new File(args[1]);
+		File target = new File(args[2]);
+		MainServer server = new MainServer(confDir, target);
 		server.run();
 	}
 
-	public MainServer(File uploadDirectory)
+	public MainServer(File confDir, File uploadDirectory)
 			throws ParserConfigurationException {
 		this.uploadDirectory = uploadDirectory;
 
@@ -87,7 +91,7 @@ public class MainServer implements Runnable {
 		this.multiLockingStrategy = Factory.createLockingStrategy();
 		this.multiResourceScanner = Factory.createResourceScanner();
 		this.imageScanner = Factory.createImageScanner();
-		this.encryptionFlowDetector = Factory.createEncryptionFlowDetector();
+		this.encryptionFlowDetector = Factory.createEncryptionFlowDetector(confDir);
 		this.deviceAdminDetector = Factory.createDeviceAdminDetector();
 		this.trafficScanner = Factory.createTrafficScanner();
 	}

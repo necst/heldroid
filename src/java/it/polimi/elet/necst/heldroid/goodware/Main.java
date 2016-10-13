@@ -1,17 +1,39 @@
 package it.polimi.elet.necst.heldroid.goodware;
 
-import it.polimi.elet.necst.heldroid.csv.FeaturesWriter;
-import it.polimi.elet.necst.heldroid.csv.PerformancesWriter;
-import it.polimi.elet.necst.heldroid.goodware.features.*;
-import it.polimi.elet.necst.heldroid.goodware.features.core.Feature;
-import it.polimi.elet.necst.heldroid.goodware.features.core.MetaFeatureGatherer;
-import it.polimi.elet.necst.heldroid.pipeline.ApplicationData;
-import it.polimi.elet.necst.heldroid.utils.*;
-import it.polimi.elet.necst.heldroid.goodware.weka.ApkClassifier;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+
 import org.json.JSONObject;
 
-import java.io.*;
-import java.util.*;
+import it.polimi.elet.necst.heldroid.csv.FeaturesWriter;
+import it.polimi.elet.necst.heldroid.csv.PerformancesWriter;
+import it.polimi.elet.necst.heldroid.goodware.features.AdwareFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.DangerousApiFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.DangerousPermissionsFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.FileMetricsFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.HarmlessPermissionsFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.HiddenApkFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.PackageFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.PotentialLeakageFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.SmsNumbersFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.SuspiciousFlowFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.SuspiciousIntentFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.SuspiciousUrlsFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.SystemCallsFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.ValidDomainFilter;
+import it.polimi.elet.necst.heldroid.goodware.features.core.Feature;
+import it.polimi.elet.necst.heldroid.goodware.features.core.MetaFeatureGatherer;
+import it.polimi.elet.necst.heldroid.goodware.weka.ApkClassifier;
+import it.polimi.elet.necst.heldroid.pipeline.ApplicationData;
+import it.polimi.elet.necst.heldroid.utils.FileSystem;
+import it.polimi.elet.necst.heldroid.utils.Options;
+import it.polimi.elet.necst.heldroid.utils.PersistentFileList;
 
 public class Main {
     public static void printUsage() {

@@ -1,7 +1,6 @@
 package it.polimi.elet.necst.heldroid.ransomware.encryption;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
@@ -18,12 +17,10 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import heros.TwoElementSet;
 import it.polimi.elet.necst.heldroid.apk.DecodedPackage;
-import it.polimi.elet.necst.heldroid.ransomware.images.ImageScanner;
 import it.polimi.elet.necst.heldroid.utils.Wrapper;
 import it.polimi.elet.necst.heldroid.utils.Xml;
-import soot.ArrayType;
+
 import soot.SootClass;
 import soot.SootMethod;
 import soot.jimple.InstanceInvokeExpr;
@@ -34,16 +31,14 @@ import soot.jimple.infoflow.android.InfoflowAndroidConfiguration;
 import soot.jimple.infoflow.android.SetupApplication;
 import soot.jimple.infoflow.android.source.AndroidSourceSinkManager.LayoutMatchingMode;
 import soot.jimple.infoflow.data.Abstraction;
-import soot.jimple.infoflow.data.AccessPath;
-import soot.jimple.infoflow.data.AccessPathFactory;
 import soot.jimple.infoflow.data.AccessPath.ArrayTaintType;
+import soot.jimple.infoflow.data.AccessPathFactory;
 import soot.jimple.infoflow.data.pathBuilders.DefaultPathBuilderFactory;
 import soot.jimple.infoflow.problems.conditions.ConditionParser;
 import soot.jimple.infoflow.problems.conditions.ConditionSet;
 import soot.jimple.infoflow.taintWrappers.EasyTaintWrapper;
 import soot.jimple.infoflow.taintWrappers.ITaintPropagationWrapper;
 import soot.jimple.infoflow.taintWrappers.TaintWrapperSet;
-import soot.jimple.infoflow.util.SystemClassHandler;
 
 public class EncryptionFlowDetector {
 	private static final String PERMISSION_TAG = "uses-permission";
@@ -52,6 +47,7 @@ public class EncryptionFlowDetector {
 
 	private static final String SOURCE_SINKS_FILE_NAME = "SourcesAndSinks.txt";
 	private static final String TAINT_WRAPPER_FILE_NAME = "EasyTaintWrapperSource.txt";
+  private static final String CONDITIONS_FILE = "Conditions.txt";
 
 	private static final int FLOW_TIMEOUT = 220; // seconds
 
@@ -62,6 +58,10 @@ public class EncryptionFlowDetector {
 
 	private ConditionSet conditions;
 
+  private File sourceSinksFilePath;
+  private File taintWrapperFilePath;
+  private File conditionsFilePath;
+
 	public void setTarget(DecodedPackage target) {
 		this.target = target;
 	}
@@ -70,18 +70,24 @@ public class EncryptionFlowDetector {
 		this.androidPlatformsDir = androidPlatformsDir;
 	}
 
-	public EncryptionFlowDetector() throws ParserConfigurationException {
+	public EncryptionFlowDetector(File confDir)
+      throws ParserConfigurationException {
+
+    this.sourceSinksFilePath = new File(confDir.getPath(), SOURCE_SINKS_FILE_NAME);
+    this.taintWrapperFilePath = new File(confDir.getPath(), TAINT_WRAPPER_FILE_NAME);
+    this.conditionsFilePath = new File(confDir.getPath(), CONDITIONS_FILE);
+
 		this.dbFactory = DocumentBuilderFactory.newInstance();
 		this.db = dbFactory.newDocumentBuilder();
 
 		try {
-			ConditionParser parser = ConditionParser.fromFile("Conditions.txt");
+			ConditionParser parser = ConditionParser.fromFile(this.conditionsFilePath.getPath());
 			this.conditions = parser.getConditionSet();
 		} catch (IOException e) {
 			System.err.println("Cannot parse file: Conditions.txt");
 			this.conditions = null;
 		}
-	}
+  }
 
 	private boolean hasRwPermission() {
 		try {
@@ -186,7 +192,7 @@ public class EncryptionFlowDetector {
 //				androidPlatformsDir.getAbsolutePath(), target	.getOriginalApk()
 //																.getAbsolutePath());
 		 String androidJar = new File(androidPlatformsDir,
-		 "android-23/android.jar").getAbsolutePath();
+         "android-23/android.jar").getAbsolutePath();
 		 SetupApplication app = new SetupApplication(androidJar,
 		 target.getOriginalApk().getAbsolutePath());
 		InfoflowAndroidConfiguration config = app.getConfig();
@@ -222,7 +228,7 @@ public class EncryptionFlowDetector {
 		TaintWrapperSet taintSet = new TaintWrapperSet();
 
 		try {
-			easyTaintWrapper = new EasyTaintWrapper(TAINT_WRAPPER_FILE_NAME);
+			easyTaintWrapper = new EasyTaintWrapper(this.taintWrapperFilePath.getPath());
 			taintSet.addWrapper(easyTaintWrapper);
 		} catch (IOException e) {
 		}
@@ -308,7 +314,7 @@ public class EncryptionFlowDetector {
 		app.setTaintWrapper(taintSet);
 
 		try {
-			app.calculateSourcesSinksEntrypoints(SOURCE_SINKS_FILE_NAME);
+			app.calculateSourcesSinksEntrypoints(this.sourceSinksFilePath.getPath());
 		} catch (Exception e) {
 		}
 

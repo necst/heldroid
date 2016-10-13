@@ -56,9 +56,11 @@ public class MainScanner {
 			IOException, InterruptedException {
 		mainArgs = args;
 
-		final File target = new File(args[1]);
-		final File result = new File(args[2]);
-		jsonDirectory = new File(args[3]);
+		final File confDir = new File(args[1]);
+		final File target = new File(args[2]);
+		final File result = new File(args[3]);
+		jsonDirectory = new File(args[4]);
+
 		final Options options = new Options(args);
 
 		silentMode = options.contains("-s");
@@ -70,7 +72,7 @@ public class MainScanner {
 		multiLockingStrategy = Factory.createLockingStrategy();
 		multiResourceScanner = Factory.createResourceScanner();
 		imageScanner = Factory.createImageScanner();
-		encryptionFlowDetector = Factory.createEncryptionFlowDetector();
+		encryptionFlowDetector = Factory.createEncryptionFlowDetector(confDir);
 		deviceAdminDetector = Factory.createDeviceAdminDetector();
 		photoAdminDetector = Factory.createPhotoAdminDetector();
 
