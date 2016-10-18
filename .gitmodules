@@ -1,0 +1,3 @@
+[submodule "android-platforms"]
+	path = android-platforms
+	url = https://github.com/Sable/android-platforms.git
