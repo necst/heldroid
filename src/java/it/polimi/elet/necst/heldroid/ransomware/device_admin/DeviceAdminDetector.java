@@ -19,7 +19,6 @@ import java.io.FilenameFilter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -32,12 +31,10 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.lucene.util.ThreadInterruptedException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import it.polimi.elet.necst.heldroid.apk.DecodedPackage;
-import it.polimi.elet.necst.heldroid.ransomware.Globals;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminResult.Policy;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.InstructionSimulator.Node;
 import it.polimi.elet.necst.heldroid.ransomware.encryption.EncryptionFlowDetector;
@@ -45,12 +42,11 @@ import it.polimi.elet.necst.heldroid.utils.CFGUtils;
 import it.polimi.elet.necst.heldroid.utils.FileSystem;
 import it.polimi.elet.necst.heldroid.utils.Wrapper;
 import it.polimi.elet.necst.heldroid.utils.Xml;
-import soot.PackManager;
+
 import soot.RefType;
 import soot.Scene;
 import soot.SootClass;
 import soot.SootMethod;
-import soot.Type;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.AssignStmt;
@@ -60,18 +56,12 @@ import soot.jimple.InvokeExpr;
 import soot.jimple.InvokeStmt;
 import soot.jimple.Stmt;
 import soot.jimple.StringConstant;
-import soot.jimple.infoflow.InfoflowConfiguration.CallgraphAlgorithm;
-import soot.jimple.infoflow.android.SetupApplication;
-import soot.jimple.infoflow.cfg.DefaultBiDiICFGFactory;
 import soot.jimple.infoflow.cfg.SharedCfg;
 import soot.jimple.infoflow.problems.conditions.BreadthFirstSearch;
 import soot.jimple.infoflow.problems.conditions.ConstantDeclarationFinder;
 import soot.jimple.infoflow.problems.conditions.DeclarationFinder;
 import soot.jimple.infoflow.problems.conditions.SootClassUtil;
 import soot.jimple.infoflow.solver.cfg.IInfoflowCFG;
-//import soot.jimple.infoflow.util.SystemClassHandler;
-import soot.options.Options;
-import sun.security.jca.GetInstance.Instance;
 
 /**
  * This class analyzes an APK file in order to discover if the app uses Android

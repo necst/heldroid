@@ -321,8 +321,8 @@ public class MainServer implements Runnable {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            Map<String, String> params = (Map<String, String>)exchange.getAttribute("parameters");
-            String hash = params.get("hash");
+            Map<?, ?> params = (Map<?, ?>)exchange.getAttribute("parameters");
+            String hash = (String) params.get("hash");
             String response = MainServer.this.fetchResponseByHash(hash);
 
             if (response == null) {

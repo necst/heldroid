@@ -7,7 +7,6 @@ buildscript {
 	}
 }
 
-apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'application'
 apply plugin: 'com.github.johnrengelman.shadow'
@@ -32,6 +31,13 @@ compileJava {
 	options.compilerArgs << "-Xlint:unchecked"
 }
 
+eclipse {
+  classpath {
+    downloadJavadoc = true
+      downloadSources = true
+  }
+}
+
 dependencies {
   compile files('lib/androidmarketapi-0.6.jar')
   compile files('lib/axml-2.0.jar')
@@ -40,6 +46,7 @@ dependencies {
   compile files('lib/soot-infoflow.jar')
   compile files('lib/soot-infoflow-android.jar')
 
+  compile 'org.slf4j:slf4j-parent:1.7.21'
   compile 'org.apache.commons:commons-compress:1.12'
   compile 'jnetpcap:jnetpcap:1.4.r1425-1f'
   compile 'net.sourceforge.jregex:jregex:1.2_01'
@@ -56,6 +63,10 @@ dependencies {
   compile 'net.sourceforge.tess4j:tess4j:3.2.1'
   compile 'org.languagetool:languagetool:2.0.1'
   compile 'org.languagetool:language-all:3.5'
+}
+
+task showMeCache << {
+  configurations.compile.each { println it }
 }
 
 sourceSets {

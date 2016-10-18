@@ -21,7 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.log4j.pattern.FileLocationPatternConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import it.polimi.elet.necst.heldroid.pipeline.ApplicationData;
 import it.polimi.elet.necst.heldroid.ransomware.device_admin.DeviceAdminDetector;
@@ -42,6 +43,7 @@ import it.polimi.elet.necst.heldroid.utils.Options;
 import it.polimi.elet.necst.heldroid.utils.PersistentFileList;
 import it.polimi.elet.necst.heldroid.utils.Stopwatch;
 import it.polimi.elet.necst.heldroid.utils.Wrapper;
+
 import soot.jimple.infoflow.cfg.SharedCfg;
 import soot.jimple.infoflow.results.InfoflowResults;
 
@@ -52,9 +54,13 @@ public class MainScanner {
 	 */
 	private static File jsonDirectory;
 
+  private final static Logger logger = LoggerFactory.getLogger(MainScanner.class); 
+
 	public static void main(String[] args) throws ParserConfigurationException,
 			IOException, InterruptedException {
 		mainArgs = args;
+
+    logger.info("Starting off!");
 
 		final File confDir = new File(args[1]);
 		final File target = new File(args[2]);
@@ -69,12 +75,27 @@ public class MainScanner {
 		noTextDetection = options.contains("-nt");
 		noDeviceAdminDetection = options.contains("-na");
 
+    logger.info("Instantiating components...");
+
+    logger.info("Creating lock-strategy detector");
 		multiLockingStrategy = Factory.createLockingStrategy();
+
+    logger.info("Creaating resource scanner");
 		multiResourceScanner = Factory.createResourceScanner();
+
+    logger.info("Creating image scanner");
 		imageScanner = Factory.createImageScanner();
+
+    logger.info("Creating encryption-strategy detector");
 		encryptionFlowDetector = Factory.createEncryptionFlowDetector(confDir);
+
+    logger.info("Creating device-admin detector");
 		deviceAdminDetector = Factory.createDeviceAdminDetector();
+
+    logger.info("Creating photo-admin detector");
 		photoAdminDetector = Factory.createPhotoAdminDetector();
+
+    logger.info("Components ready to analyze!");
 
 		examinedFiles = new PersistentFileList(
 				Globals.EXAMINED_FILES_LIST_FILE);
@@ -102,6 +123,8 @@ public class MainScanner {
 		availableFiles = new ArrayList<File>();
 		availableUnpackedData = new ArrayList<ApplicationData>();
 		unpackingTimes = new ArrayList<Double>();
+
+    logger.info("Preparing workers threads");
 
 		fileEnumeratingThread = new Thread(new Runnable() {
 			@Override

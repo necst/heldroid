@@ -507,11 +507,10 @@ public class MainServer implements Runnable {
 
 		@Override
 		public void handle(HttpExchange exchange) throws IOException {
-			Map<String, String> params = (Map<String, String>) exchange.getAttribute(
-					"parameters");
+			Map<?, ?> params = (Map<?, ?>) exchange.getAttribute("parameters");
 
-			String family = params.get("family");
-			String hash = params.get("hash");
+			String family = (String) params.get("family");
+			String hash = (String) params.get("hash");
 
 			if (family == null || hash == null) {
 				respond(exchange, 400, "No hash or family provided");
@@ -569,9 +568,8 @@ public class MainServer implements Runnable {
 
 		@Override
 		public void handle(HttpExchange exchange) throws IOException {
-			Map<String, String> params = (Map<String, String>) exchange.getAttribute(
-					"parameters");
-			String hash = params.get("hash");
+			Map<?, ?> params = (Map<?, ?>) exchange.getAttribute("parameters");
+			String hash = (String) params.get("hash");
 			String response = MainServer.this.fetchResponseByHash(hash);
 
 			if (response == null) {

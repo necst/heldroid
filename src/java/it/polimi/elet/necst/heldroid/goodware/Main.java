@@ -375,8 +375,9 @@ public class Main {
             int detectionCount = 0;
             int totalScans = 0;
 
-            for (Iterator<String> iterator = scans.keys(); iterator.hasNext(); ) {
-                String key = iterator.next();
+            Iterator<?> iterator = scans.keys();
+            while (iterator.hasNext()) {
+                String key = (String) iterator.next();
                 Object field = scans.get(key);
 
                 if (field instanceof JSONObject) {

@@ -9,6 +9,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.cybozu.labs.langdetect.Detector;
 import com.cybozu.labs.langdetect.DetectorFactory;
 import com.cybozu.labs.langdetect.LangDetectException;
@@ -20,6 +23,8 @@ import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifi
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassifierCollection;
 
 public abstract class ResourceScanner {
+  private static final Logger logger = LoggerFactory.getLogger(ResourceScanner.class);
+
 	private static final Pattern RES_VALUE_PATTERN = Pattern.compile(
 			"\\@\\w+\\/[\\w_]+");
 	private static final int MIN_STRING_LENGTH = 30;
@@ -108,6 +113,7 @@ public abstract class ResourceScanner {
 	}
 
 	public ResourceScanner(TextClassifierCollection textClassifierCollection) {
+    logger.info("Instantiating ResourceScanner");
 		this.textClassifierCollection = textClassifierCollection;
 		this.resetStatistics();
 	}

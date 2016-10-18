@@ -23,6 +23,8 @@ import org.languagetool.language.AmericanEnglish;
 import org.languagetool.rules.Rule;
 import org.languagetool.rules.spelling.SpellingCheckRule;
 import org.languagetool.tools.Tools;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import it.polimi.elet.necst.heldroid.ransomware.text.SupportedLanguage;
 import it.polimi.elet.necst.heldroid.ransomware.text.classification.TextClassification;
@@ -32,6 +34,7 @@ import it.polimi.elet.necst.heldroid.ransomware.text.scanning.ResourceScanner;
 import it.polimi.elet.necst.heldroid.utils.FileSystem;
 
 public class ImageScanner extends ResourceScanner {
+  private static final Logger logger = LoggerFactory.getLogger(ImageScanner.class);
 
 	// Min number of characters that text must contain to be analysed
 	private static final int MIN_TEXT_LENGTH = 15;
@@ -47,6 +50,8 @@ public class ImageScanner extends ResourceScanner {
 
 	public ImageScanner(TextClassifierCollection textClassifierCollection) {
 		super(textClassifierCollection);
+
+    logger.info("Creating ImageScanner");
 	}
 
 	@Override
