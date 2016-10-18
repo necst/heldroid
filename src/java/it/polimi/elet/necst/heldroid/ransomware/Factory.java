@@ -44,10 +44,10 @@ import opennlp.tools.stemmer.snowball.SnowballStemmer;
 public class Factory {
   private final static Logger logger = LoggerFactory.getLogger(Factory.class);
 
-  public static EncryptionFlowDetector createEncryptionFlowDetector(File confDir)
+  public static EncryptionFlowDetector createEncryptionFlowDetector()
       throws ParserConfigurationException {
 
-    EncryptionFlowDetector encryptionFlowDetector = new EncryptionFlowDetector(confDir);
+    EncryptionFlowDetector encryptionFlowDetector = new EncryptionFlowDetector();
 
     encryptionFlowDetector.setAndroidPlatformsDir(Globals.ANDROID_PLATFORMS_DIRECTORY);
     return encryptionFlowDetector;

@@ -62,10 +62,9 @@ public class MainScanner {
 
     logger.info("Starting off!");
 
-		final File confDir = new File(args[1]);
-		final File target = new File(args[2]);
-		final File result = new File(args[3]);
-		jsonDirectory = new File(args[4]);
+		final File target = new File(args[1]);
+		final File result = new File(args[2]);
+		jsonDirectory = new File(args[3]);
 
 		final Options options = new Options(args);
 
@@ -87,7 +86,7 @@ public class MainScanner {
 		imageScanner = Factory.createImageScanner();
 
     logger.info("Creating encryption-strategy detector");
-		encryptionFlowDetector = Factory.createEncryptionFlowDetector(confDir);
+		encryptionFlowDetector = Factory.createEncryptionFlowDetector();
 
     logger.info("Creating device-admin detector");
 		deviceAdminDetector = Factory.createDeviceAdminDetector();

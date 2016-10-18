@@ -70,12 +70,12 @@ public class EncryptionFlowDetector {
 		this.androidPlatformsDir = androidPlatformsDir;
 	}
 
-	public EncryptionFlowDetector(File confDir)
+	public EncryptionFlowDetector()
       throws ParserConfigurationException {
 
-    this.sourceSinksFilePath = new File(confDir.getPath(), SOURCE_SINKS_FILE_NAME);
-    this.taintWrapperFilePath = new File(confDir.getPath(), TAINT_WRAPPER_FILE_NAME);
-    this.conditionsFilePath = new File(confDir.getPath(), CONDITIONS_FILE);
+    this.sourceSinksFilePath = new File(SOURCE_SINKS_FILE_NAME);
+    this.taintWrapperFilePath = new File(TAINT_WRAPPER_FILE_NAME);
+    this.conditionsFilePath = new File(CONDITIONS_FILE);
 
 		this.dbFactory = DocumentBuilderFactory.newInstance();
 		this.db = dbFactory.newDocumentBuilder();

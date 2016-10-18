@@ -62,13 +62,12 @@ public class MainServer implements Runnable {
 	public static void main(String[] args)
     throws ParserConfigurationException {
 
-		File confDir = new File(args[1]);
-		File target = new File(args[2]);
-		MainServer server = new MainServer(confDir, target);
+		File target = new File(args[1]);
+		MainServer server = new MainServer(target);
 		server.run();
 	}
 
-	public MainServer(File confDir, File uploadDirectory)
+	public MainServer(File uploadDirectory)
 			throws ParserConfigurationException {
 		this.uploadDirectory = uploadDirectory;
 
@@ -91,7 +90,7 @@ public class MainServer implements Runnable {
 		this.multiLockingStrategy = Factory.createLockingStrategy();
 		this.multiResourceScanner = Factory.createResourceScanner();
 		this.imageScanner = Factory.createImageScanner();
-		this.encryptionFlowDetector = Factory.createEncryptionFlowDetector(confDir);
+		this.encryptionFlowDetector = Factory.createEncryptionFlowDetector();
 		this.deviceAdminDetector = Factory.createDeviceAdminDetector();
 		this.trafficScanner = Factory.createTrafficScanner();
 	}
