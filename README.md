@@ -4,10 +4,10 @@ of Android ransomware. What it does in a nutshell is find clues in the
 disassembled Android bytecode that indicate the presence of code used to
 implement the typical features of ransomware. This includes:
 
-	* use of encryption routines without user intervention
-  * locking the screen and make the device "unusable"
-  * displaying threatening messages on the screen to ask for a ransom
-  * abuse of the Device Admin API for unattended locking or wiping
+* use of encryption routines without user intervention
+* locking the screen and make the device "unusable"
+* displaying threatening messages on the screen to ask for a ransom
+* abuse of the Device Admin API for unattended locking or wiping
 
 It does not deal with native code, mostly because native code is binary code,
 for which there are [other great tools](http://angr.io) that we don't want to
@@ -63,8 +63,8 @@ two academic papers and one conference presentation (Blackhat EU 2016, London):
 ## Requirements
 HelDroid requires:
 
-  * Java 1.7+
-  * [Gradle 3.1+](https://docs.gradle.org/current/userguide/installation.html)
+* Java 1.7+
+* [Gradle 3.1+](https://docs.gradle.org/current/userguide/installation.html)
 
 ## Install
 HelDroid is written in Java, and has a few dependencies. We strive to keep the
@@ -92,9 +92,9 @@ $ java -jar build/libs/heldroid-all.jar \
 
 This in turn will create:
 
-  * `examined.txt` in the current directory, holding a cache of scanned file paths
-  * `diagnostics.csv` in the current directory, holding a bunch of stats
-  * `test/2fcd8c40e3b59786a2661054bcc2ee4124a80aee737035f59995a943b29302fd.json` holding detailed info about the analysis
+* `examined.txt` in the current directory, holding a cache of scanned file paths
+* `diagnostics.csv` in the current directory, holding a bunch of stats
+* `test/2fcd8c40e3b59786a2661054bcc2ee4124a80aee737035f59995a943b29302fd.json` holding detailed info about the analysis
 
 ```
 {
