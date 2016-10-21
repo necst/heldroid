@@ -61,7 +61,6 @@ dependencies {
   compile 'nz.ac.waikato.cms.weka:weka-stable:3.8.0'
   compile 'nz.ac.waikato.cms.weka:LibSVM:1.0.9'
   compile 'net.sourceforge.tess4j:tess4j:3.2.1'
-  compile 'org.languagetool:languagetool:2.0.1'
   compile 'org.languagetool:language-all:3.5'
 }
 

@@ -1,5 +1,13 @@
 package it.polimi.elet.necst.heldroid.smali;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import it.polimi.elet.necst.heldroid.pipeline.ThreadedCollectionExecutor;
 import it.polimi.elet.necst.heldroid.smali.collections.QueryableSmaliClassCollection;
 import it.polimi.elet.necst.heldroid.smali.core.SmaliClass;
@@ -7,13 +15,9 @@ import it.polimi.elet.necst.heldroid.smali.core.SmaliField;
 import it.polimi.elet.necst.heldroid.smali.core.SmaliMethod;
 import it.polimi.elet.necst.heldroid.smali.names.SmaliClassName;
 import it.polimi.elet.necst.heldroid.smali.names.SmaliMemberName;
-import it.polimi.elet.necst.heldroid.smali.statements.*;
+import it.polimi.elet.necst.heldroid.smali.statements.SmaliPutStatement;
+import it.polimi.elet.necst.heldroid.smali.statements.SmaliStatement;
 import it.polimi.elet.necst.heldroid.utils.MultiMap;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class SmaliLoader {
     private static final int FILES_PER_THREAD = 10;
