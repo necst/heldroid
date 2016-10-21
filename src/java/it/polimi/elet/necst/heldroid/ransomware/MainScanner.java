@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,11 +175,6 @@ public class MainScanner {
 		closeWriters();
 	}
 
-	private static void println(String message) {
-		if (!silentMode)
-			System.out.println(message);
-	}
-
 	private static void print(String message) {
 		if (!silentMode)
 			System.out.print(message);
@@ -216,7 +212,7 @@ public class MainScanner {
 
 	private static void checkFile(File file) {
 		if (examinedFiles.contains(file)) {
-			println("Skipped: " + file.getName());
+			logger.info("Skipped: " + file.getName());
 			return;
 		}
 
@@ -244,14 +240,14 @@ public class MainScanner {
 				analysisStalls++;
 
 				if (analysisStalls >= MAX_ANALYSIS_STALLS) {
-					println("Stalled " + analysisStalls
+					logger.warn("Stalled " + analysisStalls
 							+ " times. Maybe analysis thread crahsed? Restarting.");
 					restartApplication();
 					return;
 				}
 
 				try {
-					println("Analysis too slow: unpacking routine stalled for "
+					logger.warn("Analysis too slow: unpacking routine stalled for "
 							+ UNPACKING_WAIT_TIME + " seconds");
 					Thread.sleep(UNPACKING_WAIT_TIME * 1000);
 				} catch (InterruptedException e) {
@@ -277,7 +273,7 @@ public class MainScanner {
 				file = availableFiles.get(0);
 			}
 
-			println("Unpacking: " + file.getName());
+			logger.info("Unpacking: " + file.getName());
 
 			try {
 				Long startTime = System.currentTimeMillis();
@@ -289,9 +285,9 @@ public class MainScanner {
 					unpackingTimes.add((double) (endTime - startTime) / 1000.0);
 				}
 
-				println("Unpacked: " + file.getName());
+				logger.info("Unpacked: " + file.getName());
 			} catch (Exception e) {
-				println("Dropped: " + file.getName() + "; " + e.getMessage());
+				logger.warn("Dropped: " + file.getName() + "; " + e.getMessage());
 			}
 
 			synchronized (availableFiles) {
@@ -325,15 +321,15 @@ public class MainScanner {
 				unpackingStalls++;
 
 				if (unpackingStalls >= MAX_UNPACKING_STALLS) {
-					println("Stalled " + analysisStalls
-							+ " times. Maybe unpacking thread crahsed? Restarting.");
+					logger.warn("Stalled " + analysisStalls
+              + " times. Maybe unpacking thread crahsed? Restarting.");
 					restartApplication();
 					return;
 				}
 
 				try {
-					println("Unpacking too slow: analysis routine stalled for "
-							+ ANALYSIS_WAIT_TIME + " seconds");
+					logger.warn("Unpacking too slow: analysis routine stalled for "
+              + ANALYSIS_WAIT_TIME + " seconds");
 					Thread.sleep(ANALYSIS_WAIT_TIME * 1000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -361,7 +357,7 @@ public class MainScanner {
 		String apkName = applicationData.getDecodedPackage()
 										.getOriginalApk()
 										.getAbsolutePath();
-		println("Submitted: " + apkName);
+		logger.info("Submitted: " + apkName);
 
 		examinedFiles.add(applicationData	.getDecodedPackage()
 											.getOriginalApk());
@@ -590,7 +586,7 @@ public class MainScanner {
 		try {
 			if (!executor.awaitTermination(ANALYSIS_TIMEOUT,
 					TimeUnit.SECONDS)) {
-				System.err.println("Analysis timed out");
+				logger.warn("Analysis timed out");
 				executor.shutdownNow();
 				timedOut = true;
 			}
@@ -603,10 +599,9 @@ public class MainScanner {
 
 		// Create JSON
 		try {
-			String hash = FileSystem.hashOf(applicationData	.getDecodedPackage()
-															.getOriginalApk());
+      String fn = FilenameUtils.getBaseName(apkName);
 			File hashDirectory = new File(MainScanner.jsonDirectory,
-					hash + ".json");
+					fn + ".json");
 			OutputStream jsonWriter = new FileOutputStream(hashDirectory);
 			String json = MainScanner.buildResponseFromResults(
 					lockDetected.value,
@@ -668,7 +663,7 @@ public class MainScanner {
 		// No longer deleting temp files
 
 		if (!timedOut)
-			println("Completed: " + apkName);
+			logger.info("Completed: " + apkName);
 		else {
 			print("Timeout");
 
@@ -680,7 +675,7 @@ public class MainScanner {
 					&& (encryptionDetectionTime.value == ANALYSIS_TIMEOUT))
 				print(" EncryptionDetection");
 
-			println(": " + apkName);
+			print(": " + apkName);
 		}
 	}
 
@@ -794,8 +789,8 @@ public class MainScanner {
 	// When this number is reached, the unpacking thread waits for
 	// UNPACKING_WAIT_TIME before continuing
 	private static final int MAX_ALLOWED_UNPACKED_APKS_IN_MEMORY = 15;
-	private static final int UNPACKING_WAIT_TIME = 10; // seconds
-	private static final int ANALYSIS_WAIT_TIME = 10;
+	private static final int UNPACKING_WAIT_TIME = 20; // seconds
+	private static final int ANALYSIS_WAIT_TIME = 20;
 
 	private static final int ANALYSIS_TIMEOUT = 210; // seconds
 

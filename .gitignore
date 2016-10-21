@@ -2,6 +2,7 @@
 apktool-tmp/
 out/
 examined.txt
+diagnostics.csv
 *.iml
 .classpath
 .project
